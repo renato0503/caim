@@ -3,7 +3,7 @@ import { dbService } from '../db/db-service.js';
 import { security } from '../security/security-service.js';
 import { agentManager } from '../agents/agent-manager.js';
 
-export const PROVIDER_LABELS = { deepseek: 'DeepSeek', qwen: 'Qwen', openai: 'OpenAI' };
+export const PROVIDER_LABELS = { deepseek: 'DeepSeek', qwen: 'Qwen', openai: 'OpenAI', nvidia: 'NVIDIA', opencode: 'OpenCode' };
 
 export class AuthViews {
   constructor({ notify, onEnterIde }) {
@@ -253,6 +253,8 @@ export class AuthViews {
           <option value="deepseek" ${data.provider === 'deepseek' ? 'selected' : ''}>DeepSeek</option>
           <option value="qwen" ${data.provider === 'qwen' ? 'selected' : ''}>Qwen</option>
           <option value="openai" ${data.provider === 'openai' ? 'selected' : ''}>OpenAI</option>
+          <option value="nvidia" ${data.provider === 'nvidia' ? 'selected' : ''}>NVIDIA</option>
+          <option value="opencode" ${data.provider === 'opencode' ? 'selected' : ''}>OpenCode</option>
         </select>
         <input data-field="baseUrl" placeholder="Base URL (opcional, ex: https://proxy/opencode/v1)" value="${escapeHtml(data.baseUrl || '')}">
         <input data-field="model" placeholder="Modelo (opcional, ex: deepseek-chat)" value="${escapeHtml(data.model || '')}">

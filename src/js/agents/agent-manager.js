@@ -12,6 +12,8 @@ const PROVIDERS = {
   deepseek: { url: 'https://api.deepseek.com', model: 'deepseek-chat' },
   qwen: { url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
   openai: { url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+  nvidia: { url: 'https://integrate.api.nvidia.com/v1', model: 'meta/llama-3.3-70b-instruct' },
+  opencode: { url: '', model: 'default' }, // proxy OpenAI-compatible — preencher baseUrl no Settings
 };
 
 const SYSTEM_PROMPT = `Você é o agente de código do CAIM, um IDE mobile. O usuário pede um MVP.
@@ -129,7 +131,8 @@ class AgentManager {
     const errors = [];
     for (const entry of keys) {
       const cfg = PROVIDERS[entry.provider];
-      if (!cfg && !entry.baseUrl) continue;
+      // provider sem URL padrão (ex.: opencode) exige baseUrl no Settings
+      if ((!cfg || !cfg.url) && !entry.baseUrl) continue;
       try {
         return await this.liveSend(text, entry, cfg, { onChunk, onThinking, signal });
       } catch (err) {
