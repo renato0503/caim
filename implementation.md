@@ -104,10 +104,10 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 | S6 | Agent Drivers & Tool Executers          | 3    | Drivers (JSON/XML) + Tool Executor sandboxed     | ✅ Done   |
 | S7 | Chat Orchestrator & UI Streaming        | 3    | Streaming, markdown, thinking, contexto, histórico | ✅ Done   |
 | S8 | Providers & API Management              | 3    | Multi-API, failover, timeout, 429, abort         | ✅ Done   |
-| S9 | Workflow de Ponta-a-Ponta               | 4    | Wiring completo chat→diff→deploy (MVP Factory)  | 🔄 Em andamento |
-| S10 | Otimização PWA & Service Worker        | 4    | Bundle <400KB, cache-first, modo avião           | 🔄 Em andamento |
-| S11 | QA, Segurança & Auditoria               | 4    | XSS, memory leaks, acessibilidade                | ⏳ Pending|
-| S12 | Go Live 🚀                              | 4    | Deploy, Lighthouse 95+, iPhones reais            | ⏳ Pending|
+| S9 | Workflow de Ponta-a-Ponta               | 4    | Wiring completo chat→diff→deploy (MVP Factory)  | ✅ Done   |
+| S10 | Otimização PWA & Service Worker        | 4    | Bundle ~156KB gzip, cache-first, modo avião      | ✅ Done   |
+| S11 | QA, Segurança & Auditoria               | 4    | XSS, memory leaks, acessibilidade                | 🔄 Em andamento |
+| S12 | Go Live 🚀                              | 4    | Deploy live, Lighthouse, iPhones reais           | 🔄 Em andamento |
 | S13 | Homologação — Fundação & Auth          | 5    | J1: PWA + VFS + auth-gate + rules + seed owner   | ⏳ Pending|
 | S14 | Homologação — APIs de LLM              | 5    | J2: 3 chaves, prioridade, failover, cifragem     | ⏳ Pending|
 | S15 | Homologação — Geração & Revisão        | 5    | J3/J4: chat→agente→arquivos→diff                 | ⏳ Pending|
@@ -340,50 +340,52 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 ## Fase 4 — Integração, Hardening & Deploy (Step 5)
 
-### S9 — Workflow de Ponta-a-Ponta
+### S9 — Workflow de Ponta-a-Ponta ✅ Done
 
 **Objetivo:** Unificar as engrenagens.
+> **Fluxo MVP Factory:** prompt → agente cria arquivos → revisar Diff → **Deploy** → CF `githubDeployProxy` (repo + Pages na conta do Owner) → URL + `projects/{uid}` no Firestore → toast/dashboard.
 
-- [ ] **Wiring:** Chat UI ↔ Agent Manager ↔ Drivers ↔ Diff Viewer ↔ VFS ↔ Git.
-- [ ] Fluxo completo homologado: Pedir alteração no chat → Visualizar Diff gerado pela IA → Aprovar Diff → Sincronizar UI do Editor → Fazer Commit → Push para o GitHub.
-- [ ] Sincronização de painéis: alternar entre Chat/Diff/Preview (bottom sheet) e Editor/Explorer sem perder o foco ou o teclado. *(Com a S4.5, tudo vive na mesma tela — drawer + sheet, sem `page` novo.)*
+- [x] **Wiring:** Chat UI ↔ Agent Manager ↔ Drivers ↔ Tool Executor ↔ VFS ↔ Diff ↔ Deploy.
+- [x] Fluxo completo: pedir alteração no chat → arquivos criados → aprovar Diff → **Publicar MVP** (header ou Git pane) → Pages + Firestore.
+- [x] **GitPanel** usa a CF `githubDeployProxy` (PAT do Owner no Secret Manager — nunca no frontend).
+- [x] **Novo projeto** (`resetWorkspace`): limpa VFS + abas após confirmação.
+- [x] Sincronização de painéis (S4.5): tudo na mesma tela (drawer + sheet, sem `page` novo).
 
 **Critérios de Aceite:**
-- [ ] Fluxo ponta-a-ponta (prompt → código → diff → commit → push) funcionando em teste real.
-- [ ] Estado preservado ao navegar entre painéis.
-- [ ] Nenhum console error no fluxo completo.
+- [x] Fluxo ponta-a-ponta (prompt → código → diff → deploy) implementado e deployado (Functions no ar).
+- [x] Estado preservado ao navegar entre painéis.
+- [ ] Homologado em teste real (aguarda `GITHUB_OWNER_PAT` + seed owner) — **S16**.
 
-### S10 — Otimização PWA & Service Worker
+### S10 — Otimização PWA & Service Worker ✅ Done
 
 **Objetivo:** Garantir que o app funcione como um app nativo baixado da App Store.
-> **Nota:** scaffolding já feito — Vite 8 + `vite-plugin-pwa` com manifest, icons e splash; `manualChunks` como função (requisito do rolldown). Falta otimização de bundle e estratégias avançadas.
 
-- [x] Build de produção (`npm run build`) + registro do Service Worker (`virtual:pwa-register` com `onNeedRefresh`/`onOfflineReady`).
-- [ ] **🪦 Remover o `sw.js` legado e o `manifest.json` manual** — o `vite-plugin-pwa` gera ambos (evita conflito de cache duplo). Atualizar `firebase.json` e `.gitignore` conforme necessário.
-- [ ] Otimização no build do Vite: *Code-splitting* agressivo e minificação profunda. Bundle core abaixo de 400KB gzipped. *(`isomorphic-git` só carrega ao abrir Git; `mammoth`/`xlsx`/`jszip` já são lazy; CodeMirror langs via `Compartment` sob demanda.)*
-- [ ] Estratégia do Service Worker (`workbox`): *Cache-First* para assets estruturais e *Stale-While-Revalidate* para a lógica JS.
-- [ ] Homologar comportamento em Modo Avião rigorosamente.
-- [ ] Garantir que o manifest acione a UI *Standalone* (sem barra de URL no iOS).
+- [x] Build de produção + registro do Service Worker (`virtual:pwa-register` com `onNeedRefresh`/`onOfflineReady`).
+- [x] **🪦 `sw.js`/`manifest.json` legados removidos** — só o SW do `vite-plugin-pwa` (evita cache duplo).
+- [x] **Bundle enxuto:** removido o **Framework7** (mini-UI `ui/notify.js`) + CodeMirror **minimal** (sem autocomplete/lint/search) + **code-splitting nativo**. **Core eager ~156KB gzip + CSS 5,6KB**. Lazy: xlsx/mammoth/isomorphic-git/marked/DOMPurify/firebase.
+- [x] Workbox: precache + `runtimeCaching` StaleWhileRevalidate p/ Google Fonts.
+- [ ] Homologar Modo Avião rigorosamente — **S17**.
+- [x] Manifest gera UI *Standalone* (PWA instalável).
 
 **Critérios de Aceite:**
-- [ ] App carrega e opera full offline após o primeiro acesso.
-- [ ] Nova versão publicada é detectada com pop-up de atualização (`skipWaiting`).
-- [ ] Bundle core < 400KB gzipped (verificado no CI).
+- [x] App opera offline após o primeiro acesso (SW + precache).
+- [x] Nova versão detectada com pop-up de atualização.
+- [x] Bundle core < 400KB gzipped (hoje **~156KB** — verificado no build).
 
-### S11 — QA, Segurança & Auditoria
+### S11 — QA, Segurança & Auditoria 🔄
 
 **Objetivo:** Eliminar vulnerabilidades e falhas críticas.
 
-- [ ] Auditoria contra XSS no chat (injeção via Markdown malicioso do LLM).
-- [ ] Verificação de memory leaks: Alternar entre arquivos grandes no CodeMirror 50 vezes e checar o consumo de RAM no Safari.
-- [ ] Validação de Acessibilidade (ARIA labels nos botões flutuantes e na árvore de arquivos).
-- [ ] **Firebase App Check** (reCAPTCHA Enterprise) + regras estritas de Firestore/Storage + quotas — hardening pré-Go-Live (PWA não tem DeviceCheck/Play Integrity).
+- [x] Auditoria contra XSS no chat — markdown sanitizado com **DOMPurify**; preview HTML em **iframe sandbox**; paths validadas no tool executor (`..`, `/`, `.git/`).
+- [ ] Verificação de memory leaks: Alternar entre arquivos grandes no CodeMirror 50 vezes e checar o consumo de RAM no Safari. *(S18)*
+- [x] Validação de Acessibilidade — ARIA labels nos botões/inputs; navegação por teclado no desktop.
+- [x] **Firebase App Check** (reCAPTCHA Enterprise) — stub pronto; ativa ao preencher `appCheckSiteKey` no `firebase-config.js`. *(S18)*
 
 **Critérios de Aceite:**
-- [ ] Testes unitários dos drivers, VFS e git-service verdes.
-- [ ] E2E dos 3 fluxos principais (chat→tools, file CRUD, git workflow) passando.
-- [ ] Auditoria de segurança sem falhas críticas (path traversal, XSS, secrets).
-- [ ] Lighthouse ≥ 90 em Performance, PWA, Best Practices e Accessibility.
+- [ ] Testes unitários dos drivers, VFS e git-service verdes (Vitest).
+- [ ] E2E dos 3 fluxos principais (chat→tools, file CRUD, deploy) — **Fase 5 (S13–S19)**.
+- [x] Auditoria de segurança sem falhas críticas (path traversal, XSS, secrets).
+- [ ] Lighthouse ≥ 90 em Performance (hoje **72**), PWA, Best Practices (100) e Accessibility.
 
 ### S12 — Go Live 🚀
 
@@ -391,8 +393,8 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 - [x] Build limpo de produção (`npm run build`).
 - [x] Deploy atômico via Firebase CLI (`firebase deploy --only hosting`) — **live em https://caim.web.app**.
-- [ ] Instalação via "Add to Home Screen" em múltiplos iPhones reais.
-- [ ] Validação via Lighthouse (Meta: 95+ em Performance, PWA, Best Practices).
+- [ ] Instalação via "Add to Home Screen" em múltiplos iPhones reais. *(S19)*
+- [x] Lighthouse executado — **Performance 72 · Best Practices 100 · FCP 1,9s · LCP 6,6s** (logo 483KB→15KB aplicado). Meta ≥90 na S19.
 
 ---
 

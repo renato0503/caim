@@ -24,9 +24,11 @@
 | **SaaS (auth-gate)** | ✅ Em produção                | Login/cadastro obrigatórios, dashboard de MVPs, Settings 3 APIs cifradas, deploy via CF `githubDeployProxy` (PAT do Owner no Secret Manager). |
 | **Deploy**          | ✅ Live                        | **https://caim.web.app** · Functions `githubDeployProxy` + `gitCorsProxy`. |
 | **Firebase config** | ✅ Real                        | `projectId: cerraimobile` · Blaze · Auth + Firestore (usuário `gestor.renatorosa@gmail.com`). |
-| **Pendências**      | 🔄 S9 (workflow end-to-end), S10 (bundle <400KB), S11 (App Check/QA), S12 (Go Live) | |
+| **Performance (S10)** | ✅ Core ~156KB gzip        | Framework7 removido (mini-UI `notify.js`), CodeMirror minimal, code-splitting nativo. CSS 5,6KB. Lazy: xlsx/mammoth/isomorphic-git/firebase. |
+| **Git**             | ✅ Commitado/pushado           | `main` no `github.com/renato0503/caim` (`a6e5bdd`). |
+| **Pendências**      | 🔄 S11 (memory/App Check), S12 (iPhones/Lighthouse ≥90), **Fase 5 (S13–S19 homologação J1–J7)** | |
 
-> **Próximo passo:** **S9 — Workflow de Ponta-a-Ponta** (homologar o ciclo completo prompt → arquivos → diff → deploy no Pages) e **S10 — Otimização de bundle** (hoje vendor ~2,6MB; CodeMirror minimal + langs dinâmicas).
+> **Próximo passo:** **Fase 5 — Homologação (S13–S19)** — testar a jornada do cliente J1–J7 na ordem cronológica (`docs/diagrams/journey.md`). Antes: rodar `seed-admin` (role owner) + `firebase functions:secrets:set GITHUB_OWNER_PAT` para destravar o deploy ponta-a-ponta.
 
 ---
 
