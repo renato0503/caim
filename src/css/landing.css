@@ -66,7 +66,7 @@ h1, h2, h3, h4 { font-family: 'Press Start 2P', monospace; font-weight: 400; }
   padding: 10px 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .lp-logo {
@@ -97,6 +97,10 @@ h1, h2, h3, h4 { font-family: 'Press Start 2P', monospace; font-weight: 400; }
 }
 .lp-nav a:hover { color: var(--lp-accent); }
 
+.lp-header-actions {
+  flex-shrink: 0;
+}
+
 .lp-burger {
   display: none;
   flex-direction: column;
@@ -105,6 +109,7 @@ h1, h2, h3, h4 { font-family: 'Press Start 2P', monospace; font-weight: 400; }
   border: none;
   padding: 6px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 .lp-burger span { width: 22px; height: 3px; background: var(--lp-text); }
 
@@ -522,6 +527,26 @@ body.landing.crt::before {
     padding: 14px;
   }
   .lp-burger { display: flex; }
+  .lp-nav:not(.lp-open) { display: none; }
+  .lp-nav.lp-open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--lp-bg2);
+    border-bottom: 2px solid var(--lp-border);
+    padding: 14px;
+  }
+  /* Mobile: "Abrir" centralizado entre o logo (esq.) e o sanduíche (dir.) */
+  .lp-header-inner {
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .lp-header-actions {
+    margin-left: 0;
+  }
   .lp-grid-4, .lp-grid-3 { grid-template-columns: 1fr; }
   .lp-footer-inner { grid-template-columns: 1fr; }
   .lp-h1 { font-size: 26px; }
