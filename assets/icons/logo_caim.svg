@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- CAIM logo 16-bit: fundo navy + texto teal com sombra pixel -->
+  <defs>
+    <style>
+      text {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 96px;
+        font-weight: 400;
+      }
+    </style>
+  </defs>
+  <rect width="512" height="512" fill="#0f172a"/>
+  <!-- grid sutil -->
+  <g stroke="#2dd4bf" stroke-opacity="0.06" stroke-width="1">
+    <line x1="0" y1="128" x2="512" y2="128"/>
+    <line x1="0" y1="256" x2="512" y2="256"/>
+    <line x1="0" y1="384" x2="512" y2="384"/>
+    <line x1="128" y1="0" x2="128" y2="512"/>
+    <line x1="256" y1="0" x2="256" y2="512"/>
+    <line x1="384" y1="0" x2="384" y2="512"/>
+  </g>
+  <!-- sombra pixel (deslocada) -->
+  <text x="256" y="292" text-anchor="middle" fill="#020617" transform="translate(8,8)">CAIM</text>
+  <!-- contorno teal escuro -->
+  <text x="256" y="292" text-anchor="middle" fill="#14b8a6" style="paint-order:stroke" stroke="#0f766e" stroke-width="6">CAIM</text>
+  <!-- texto principal teal brilhante -->
+  <text x="256" y="292" text-anchor="middle" fill="#2dd4bf">CAIM</text>
+</svg>
