@@ -27,6 +27,12 @@
 
 ## Registro de Progresso (2026-08-15)
 
+### Sessão de 16/08 — S14 (parcial): Settings 3 APIs + failover cobertos por teste
+
+- **Bug de persistência (regressão S14) corrigido:** `AuthViews.renderSettings` não repassava a chave cifrada já salva para a linha → **reabrir Configurações e salvar sem redigitar apagava todas as chaves**. Agora `row.__encrypted` herda `data.key` ao renderizar (`auth-views.js`).
+- **Testes (Vitest + jsdom):** +10 → **51 verdes**. Novo `agent-manager.test.js` cobre **failover multi-API** (401 → cai na chave seguinte, 429 → backoff → próxima, chave desativada ignorada, erro agregado, ordem por prioridade, chave decifrada só no momento da chamada). Novo `auth-views.test.js` (jsdom) cobre Settings: 3 linhas, **reabrir preserva chaves cifradas sem redigitar**, chave digitada é cifrada (nunca texto puro), linha desativada salva com `active:false`. Dep `jsdom` adicionado.
+- **Build:** `npm run build` limpo.
+
 ### Sessão de 16/08 — S13 (parcial): testes automatizados + fixes de homologação
 
 - **Bug crítico encontrado e corrigido:** `VFS.writeFile` chamava `this.resolveMime()` mas `resolveMime` é **estático** → **toda escrita de arquivo quebrava** (novo arquivo, chat demo, upload, autosave). Corrigido para `VFSService.resolveMime()` (`vfs-service.js:119`). Detectado pelos novos testes (antes só "funcionava" porque o demo engolia o erro do Tool Executor).
@@ -449,11 +455,11 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 **Cobre:** S8 (Providers) · Settings (auth-views).
 
-- [ ] Salvar até 3 chaves (DeepSeek/Qwen/OpenAI) com prioridade e modelo/baseUrl opcionais.
-- [ ] Reabrir Settings → chaves persistem (cifradas no Firestore; campo de chave fica vazio).
-- [ ] Desativar uma chave → não é usada no failover.
-- [ ] **Failover:** chave 1 inválida (401) → cai na 2; chave 2 com 429 → backoff e cai na 3.
-- [ ] **Cifragem:** conferir no Firestore que `llm_keys[].key` é objeto `{iv, ciphertext}` e nunca texto puro.
+- [x] Salvar até 3 chaves (DeepSeek/Qwen/OpenAI) com prioridade e modelo/baseUrl opcionais. *(coberto por teste jsdom — 16/08)*
+- [x] Reabrir Settings → chaves persistem (cifradas no Firestore; campo de chave fica vazio). *(fix regressão + teste — 16/08)*
+- [x] Desativar uma chave → não é usada no failover. *(filtro `active` + teste — 16/08)*
+- [x] **Failover:** chave 1 inválida (401) → cai na 2; chave 2 com 429 → backoff e cai na 3. *(testes `agent-manager.test.js` — 16/08)*
+- [x] **Cifragem:** conferir no Firestore que `llm_keys[].key` é objeto `{iv, ciphertext}` e nunca texto puro. *(teste round-trip — 16/08)*
 
 **Critérios de Aceite:** troca de provider/modelo sem reload; nenhuma chave em texto puro.
 

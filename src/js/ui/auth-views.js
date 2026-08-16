@@ -180,7 +180,7 @@ export class AuthViews {
     const list = document.getElementById('settings-list');
     list.innerHTML = '';
     for (let i = 0; i < 3; i += 1) {
-      const data = keys[i] || { provider: 'deepseek', key: null, baseUrl: '', priority: i + 1, active: i === 0 };
+      const data = keys[i] || { provider: 'deepseek', key: null, baseUrl: '', model: '', priority: i + 1, active: i === 0 };
       list.appendChild(this.settingsRow(i, data));
     }
   }
@@ -188,6 +188,9 @@ export class AuthViews {
   settingsRow(index, data) {
     const row = document.createElement('div');
     row.className = 'settings-row';
+    // S14: preserva a chave cifrada já salva no Firestore. Sem isso, reabrir
+    // Configurações e salvar sem redigitar a chave apagaria todas as chaves.
+    row.__encrypted = data.key || null;
     row.innerHTML = `
       <div class="settings-row-head">
         <span class="settings-row-title">API ${index + 1}</span>
