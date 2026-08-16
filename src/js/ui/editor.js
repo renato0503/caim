@@ -101,6 +101,28 @@ export class CodeEditor {
   }
 
   async openFile(path, { force = false } = {}) {
+    // Guard contra chamadas concorrentes do mesmo path (vfs:changed + handler
+    // do botão podem disparar openFile quase juntos → 2 abas duplicadas).
+    if (this._opening?.has(path)) {
+      await this._opening.get(path);
+      if (this.openFiles.find((f) => f.path === path)) {
+        this.activePath = path;
+        await this.loadActive();
+        this.renderTabs();
+        return;
+      }
+    }
+    if (!this._opening) this._opening = new Map();
+    const pending = this.openFileInner(path, { force });
+    this._opening.set(path, pending);
+    try {
+      await pending;
+    } finally {
+      this._opening.delete(path);
+    }
+  }
+
+  async openFileInner(path, { force = false } = {}) {
     let file = this.openFiles.find((f) => f.path === path);
     if (!file) {
       const { content } = await vfs.readFile(path);
@@ -114,6 +136,10 @@ export class CodeEditor {
     await this.loadActive();
     this.renderTabs();
     this.setStatus('Pronto');
+  }
+
+  isOpen(path) {
+    return !!this.openFiles.find((f) => f.path === path);
   }
 
   async refreshIfStale(file) {

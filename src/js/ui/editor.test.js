@@ -69,3 +69,23 @@ describe('CodeEditor.getOpenFilesContext — priorização (S22)', () => {
     expect(ctx[0].content.length).toBeLessThanOrEqual(16384);
   });
 });
+
+describe('CodeEditor.openFile — guard contra duplicação (fix abas)', () => {
+  it('isOpen detecta arquivo aberto', async () => {
+    await vfs.ready;
+    const editor = makeEditor();
+    await vfs.writeFile('x.js', 'const x = 1;');
+    expect(editor.isOpen('x.js')).toBe(false);
+    await editor.openFile('x.js');
+    expect(editor.isOpen('x.js')).toBe(true);
+  });
+
+  it('chamadas concorrentes de openFile não duplicam a aba', async () => {
+    await vfs.ready;
+    const editor = makeEditor();
+    await vfs.writeFile('dup.js', 'const d = 1;');
+    await Promise.all([editor.openFile('dup.js'), editor.openFile('dup.js')]);
+    const count = editor.openFiles.filter((f) => f.path === 'dup.js').length;
+    expect(count).toBe(1);
+  });
+});

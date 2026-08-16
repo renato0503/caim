@@ -348,13 +348,18 @@ vfs.events.on('vfs:changed', ({ type, path }) => {
 // ============================================================
 
 $newFileBtn.addEventListener('click', () => {
-  notify.prompt('Caminho do arquivo (ex.: src/novo.js)', 'Novo arquivo', async (value) => {
+  notify.prompt('', 'Novo arquivo', async (value) => {
     const name = (value || '').trim();
     if (!name) return;
     try {
       const { created } = await vfs.writeFile(name, '// CAIM\n');
       notify.toast(created ? `Criado: ${name}` : `Atualizado: ${name}`);
-      await editor.openFile(name, { force: true });
+      // O vfs:changed (create) já abre o arquivo; chamar openFile aqui
+      // novamente geraria 2 abas (race async). Só garante o foco se ainda
+      // não estiver aberto.
+      if (!editor.isOpen(name)) {
+        await editor.openFile(name, { force: true });
+      }
     } catch (err) {
       notify.toast(err.message);
     }
@@ -859,17 +864,25 @@ bootstrap()
 
 const updateSW = registerSW({
   onNeedRefresh() {
-    notify.toast('Nova versão disponível', {
-      button: {
-        text: 'Atualizar',
-        onClick() {
-          updateSW(true);
-        },
-      },
-      position: 'center',
-    });
+    // Sem toast automático: o usuário atualiza pelo botão manual
+    // ("Atualizar para a última versão") na IDE.
   },
   onOfflineReady() {
     notify.toast('App pronto para uso offline', { position: 'center' });
   },
 });
+
+// Limpa o cache do Service Worker e recarrega a versão mais recente.
+async function updateAppToLatest() {
+  try {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+  } catch (err) {
+    // cache não acessível — segue com o update normal
+  }
+  updateSW(true);
+  setTimeout(() => location.reload(), 250);
+}
+
+document.getElementById('app-update-btn')?.addEventListener('click', () => updateAppToLatest());
+document.getElementById('settings-update')?.addEventListener('click', () => updateAppToLatest());
