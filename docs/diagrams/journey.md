@@ -62,7 +62,7 @@ flowchart TD
     F2 -- não --> F3{API 3 ok?}
 ```
 
-**Regras:** até 3 chaves ativas; failover em 401/429/5xx (backoff 1,2s em 429/5xx); timeout 120s; "Parar" aborta o fetch.
+**Regras:** até 3 chaves ativas; failover em 401/429/5xx (backoff 1,2s em 429/5xx); timeout 120s; "Parar" aborta o fetch. **S14 (16/08):** reabrir Configurações preserva as chaves cifradas sem redigitar; chaves nunca em texto puro (AES-GCM); coberto por testes (`agent-manager.test.js`, `auth-views.test.js`).
 
 ---
 
@@ -90,6 +90,7 @@ sequenceDiagram
 
 **Contexto (S7):** `editor.getOpenFilesContext()` injeta até 3 arquivos abertos no system prompt (cap 8KB). Histórico do chat persiste no VFS (60 msgs).
 **Truncamento (S15):** se o modelo cortar a resposta no meio de uma tool call (limite de tokens), o parser **salva o arquivo parcial** e o chat exibe "⚠ Resposta truncada — reenvie o prompt" (`detectTruncation` — testes verdes, 16/08).
+**Failover (S14):** chave 1 com 401 → cai na 2; chave 2 com 429 → backoff → cai na 3; chave desativada é ignorada (`getLlmKeys` filtra `active`).
 
 ---
 
@@ -151,7 +152,7 @@ flowchart TD
     G --> NV[Novo projeto → resetWorkspace]
 ```
 
-**Viewer:** md/img/html/pdf/csv/docx/xlsx/pptx (libs lazy). **Git offline:** `init/add/commit/log` 100% local.
+**Viewer:** md/img/html/pdf/csv/docx/xlsx/pptx (libs lazy; xlsx/docx sanitizados com DOMPurify — S18). **Git offline:** `init/add/commit/log` 100% local (coberto por teste, 16/08). **CSP/security headers** ativos no Hosting (S18).
 
 ---
 
@@ -166,7 +167,7 @@ flowchart TD
     SW --> UP[Nova versão → toast Atualizar]
 ```
 
-**Bundle (S10):** core eager ~156KB gzip + CSS 5,6KB (F7 removido, CodeMirror minimal). Lazy: xlsx/mammoth/isomorphic-git/marked/DOMPurify/firebase.
+**Bundle (S10):** core eager ~156KB gzip + CSS 5,6KB (F7 removido, CodeMirror minimal). Lazy: xlsx/mammoth/isomorphic-git/marked/DOMPurify/firebase. **Fonte pixel** (Press Start 2P) carregada fora do caminho crítico de render + `preload` do icon (S12/S17).
 
 ---
 

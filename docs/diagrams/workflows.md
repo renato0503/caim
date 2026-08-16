@@ -1,22 +1,26 @@
 # CAIM — Workflows de Usuário (Mermaid)
 
 > Diagramas dos fluxos de usuário do CAIM. Nomes reais de funções/componentes do código.
-> Legenda: ✅ implementado · S4.5 = layout aprovado · S2 = planejado.
+> Legenda: ✅ implementado · S2/S5 = já entregues (ver `implementation.md`).
 
 ---
 
 ## 1. Ciclo do Agente — prompt → arquivo → editor
 
-**Explicação técnica:** o usuário digita o prompt no chat (`#chat-input`) e `app.js:sendMessage` exibe a mensagem, dispara `streamDemoResponse` e chama `agentCreatesFile`, que gera `src/<slug>-N.md` e grava via `vfs.createFile`. O `EventEmitter` emite `vfs:changed` (tipo `create`), e o `CodeEditor.openFile(path, { force: true })` abre a nova aba automaticamente. Com a S4.5, o chat vive no **bottom sheet** e o editor permanece visível — o ciclo inteiro acontece sem troca de tela.
+**Explicação técnica:** o usuário digita o prompt no chat (`#chat-input`) e `app.js:sendMessage` exibe a mensagem e chama `agentManager.sendPrompt`. Em **modo LIVE** (S14): streaming SSE da LLM → `driver.parseResponse` (JSON/XML) → `toolExecutor.execute('write_file')` → `vfs.writeFile`. Em **modo DEMO**: `demoSend` gera arquivos de exemplo. O `EventEmitter` emite `vfs:changed` (tipo `create`), e o `CodeEditor.openFile(path, { force: true })` abre a nova aba automaticamente. O chat vive no **bottom sheet** e o editor permanece visível — o ciclo inteiro acontece sem troca de tela.
 
 ```mermaid
 flowchart TD
     %% Ciclo central: o prompt gera um arquivo que aparece no editor
     U[Usuário digita o prompt no Chat] -->|bottom sheet expandido| S[app.js: sendMessage]
     S --> M[addMessage user + received]
-    M --> R[streamDemoResponse]
-    R -->|streama intro| C[agentCreatesFile]
-    C -->|slugify prompt → src/&lt;slug&gt;-N.md| V[vfs.createFile]
+    M --> R{agentManager.mode}
+    R -- LIVE --> L[streaming SSE + failover multi-API]
+    L --> P[driver.parseResponse JSON/XML → tools write_file]
+    R -- DEMO --> D[demoSend gera arquivos de exemplo]
+    P --> C[toolExecutor.execute write_file]
+    D --> C
+    C -->|path válido + sem .git| V[vfs.writeFile]
 
     subgraph VFS ["VFS (Dexie)"]
         V --> DB[(IndexedDB: files)]
@@ -27,13 +31,13 @@ flowchart TD
 
     subgraph Editor ["Editor (CodeMirror 6)"]
         ED --> TABS[Aba nova no topo do workspace]
-        TABS --> L[languageFor → extensão]
+        TABS --> L2[languageFor → extensão]
     end
 
-    L --> D{Usuário satisfeito?}
-    D -- Não -->|edita e autosave 800ms| D2[markDirty → scheduleSave → vfs.writeFile]
-    D2 --> TABS
-    D -- Sim --> G[Diff/Commit — S5/S2 ]
+    L2 --> D2{Usuário satisfeito?}
+    D2 -- Não -->|edita e autosave 800ms| E2[markDirty → scheduleSave → vfs.writeFile]
+    E2 --> TABS
+    D2 -- Sim --> G[Diff/Commit — S5/S2 ✅]
 ```
 
 ---
@@ -134,20 +138,20 @@ sequenceDiagram
 
 ---
 
-## 5. Git (futuro — S2) 
+## 5. Git (implementado — S2) 
 
-**Explicação técnica:** fluxo planejado no pane `git` do bottom sheet. `git-service.js` (isomorphic-git + lightning-fs) roda `init/add/commit/log` offline; `push` decriptografa o PAT (Web Crypto) apenas na hora da rede via proxy CORS.
+**Explicação técnica:** fluxo no pane `git` do bottom sheet. `git-service.js` (isomorphic-git + `gitFs`/VFS adapter) roda `init/add/commit/log` **100% offline**; `gitFs` calcula `stat` por **hash de conteúdo** (edição no mesmo segundo não passa despercebida). `push` decriptografa o PAT (Web Crypto) apenas na hora da rede via `gitCorsProxy` (host-allowlist GitHub + rate limit — hardening S18). *Fluxo offline coberto por testes (16/08).*
 
 ```mermaid
 flowchart LR
-    %% Workflow git planejado (S2)
+    %% Workflow git implementado (S2)
     G[Toque em Git no bottom sheet] --> S[git-service.status]
     S --> A1[git add arquivos]
     A1 --> CM[git commit]
     CM --> LG[git log]
 
     CM --> PS{Precisa publicar?}
-    PS -- Sim --> PUSH[git push]
+    PS -- Sim --> PUSH[git push via gitCorsProxy]
     PUSH --> TK[SecurityService: decripta PAT AES-GCM]
     PUSH --> CORS[Proxy CORS → GitHub API]
     PS -- Não --> F[Fim — tudo offline]
@@ -155,7 +159,7 @@ flowchart LR
 
 ---
 
-## 6. Layout IDE — estados da tela (S4.5) 
+## 6. Layout IDE — estados da tela (S4.5 ✅)
 
 **Explicação técnica:** a tela nunca "troca de página". Activity Bar alterna entre drawer (Explorer) e panes do bottom sheet (Chat/Diff/Preview/Git); o editor central permanece montado o tempo todo. Altura do sheet: `48px` recolhido ↔ `80% do visualViewport` expandido.
 
@@ -175,8 +179,8 @@ stateDiagram-v2
         ChatAberto --> ChatDigitando: foca #chat-input (visualViewport)
         ChatDigitando --> ChatAberto: teclado fecha
     }
-    Chat --> Diff: aba Diff (S5)
-    Diff --> Git: aba Git (S2)
+    Chat --> Diff: aba Diff (S5 ✅)
+    Diff --> Git: aba Git (S2 ✅)
 ```
 
 ---
