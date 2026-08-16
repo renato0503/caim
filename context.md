@@ -3,8 +3,10 @@
 > **Cerra AI Mobile (CAIM)** — Mobile-first AI coding agent interface running entirely in the browser as a Progressive Web App (PWA).
 
 **Documentos Relacionados:**
-- [implementation.md](./implementation.md) — Plano mestre de sprints (S0–S12) até o Go Live, com critérios de aceite, dependências e estratégia de testes.
+- [implementation.md](./implementation.md) — Plano mestre de sprints (S0–S19) até o Go Live, com critérios de aceite, dependências e estratégia de testes.
 - [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) — Estrutura de pastas e arquitetura planejada.
+- [docs/diagrams/workflows.md](./docs/diagrams/workflows.md) — Workflows de usuário (Mermaid) com cobertura de testes por fluxo.
+- [docs/diagrams/journey.md](./docs/diagrams/journey.md) — Jornada do cliente (J0–J7) com as sprints de homologação.
 
 ---
 
@@ -12,7 +14,7 @@
 
 | Área                      | Estado                                   | Observação                                                                              |
 | ------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------- |
-| **App shell (S0/S4.5)**   | ✅ Concluído                    | **Layout IDE** (activity bar + editor central + bottom sheet + drawer) em **Framework7 9.1.2** + Vite 8 + `vite-plugin-pwa`. |
+| **App shell (S0/S4.5)**   | ✅ Concluído                    | **Layout IDE** (activity bar + editor central + bottom sheet + drawer) em **JS puro** (mini-UI `notify.js`) + Vite 8 + `vite-plugin-pwa`. *(Framework7 removido no S10 — core enxuto.)* |
 | **Build tooling**   | ✅ Instalado                   | Vite 8 (rolldown), `scripts/copy-assets.mjs`, `INICIAR.bat`. Dev em `http://localhost:5173/`. |
 | **VFS (S1)**        | ✅ Concluído                    | `vfs-service.js` (Dexie: CRUD, rename, path protection, data URLs) + `event-emitter.js`. |
 | **Git (S2)**        | ✅ Concluído                    | `git-service.js` (isomorphic-git + VFS adapter) + `security-service.js` (AES-GCM) + CF `gitCorsProxy` no ar. |
@@ -101,17 +103,17 @@ CAIM is a 100% mobile-first, web-based IDE and AI coding agent interface designe
 
 | Domain                    | Technology                            | Implementation Purpose                                                             |
 | ------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------- |
-| **Frontend Core**   | Framework7 9.1.2 (Vanilla JS) + HTML5/CSS3 | App shell (tabs, tabbar, dark theme, dialogs/toasts) com JS puro no lugar de framework de UI pesado. |
+| **Frontend Core**   | JS puro (ESM) + mini-UI `notify.js` + HTML5/CSS3 | App shell (activity bar, bottom sheet, drawer, dark theme, dialogs/toasts). *(Framework7 removido no S10.)* |
 | **Build & Tooling** | Vite 8 + `vite-plugin-pwa`            | HMR, minificação, code-splitting e PWA. ✅ Instalado (rolldown: `manualChunks` em função). |
-| **Hosting & CDN**   | Google Firebase Hosting               | Global edge caching, SSL, SPA routing rewrites, e PWA manifest delivery.         |
-| **PWA Engine**      | Service Worker + `virtual:pwa-register`| Registro de SW com `onNeedRefresh`/`onOfflineReady`; estratégias avançadas no S10. |
+| **Hosting & CDN**   | Google Firebase Hosting               | Global edge caching, SSL, SPA routing rewrites, e PWA manifest delivery. ✅ |
+| **PWA Engine**      | Service Worker + `virtual:pwa-register`| Registro de SW com `onNeedRefresh`/`onOfflineReady`; `generateSW` + google-fonts StaleWhileRevalidate. ✅ |
 | **VFS Database**    | Dexie.js (IndexedDB)                  | Reactive, asynchronous database wrapping for the local file system. ✅ (S1)        |
-| **Editor Engine**   | CodeMirror 6                          | Modular architecture, mobile touch support, dynamic syntax highlighting. 🔄 (S4)   |
-| **File Viewer**     | `marked` + `DOMPurify` + `mammoth` + `xlsx` + `jszip` | Preview de md/img/html/pdf/csv/docx/xlsx/pptx com lazy-load. 🔄 (S3.5) |
-| **Version Control** | `isomorphic-git` + `lightning-fs` | Pure JavaScript implementation of Git parsing and execution. ⏳ (S2)               |
-| **Security**        | Web Crypto API                        | AES-GCM encryption for storing GitHub PATs and LLM API keys locally. ⏳ (S2)       |
+| **Editor Engine**   | CodeMirror 6                          | Modular architecture, mobile touch support, dynamic syntax highlighting, toolbar flutuante iOS. ✅ (S4) |
+| **File Viewer**     | `marked` + `DOMPurify` + `mammoth` + `xlsx` + `jszip` | Preview de md/img/html/pdf/csv/docx/xlsx/pptx com lazy-load e sanitização XSS. ✅ (S3.5/S18) |
+| **Version Control** | `isomorphic-git` + VFS adapter (`vfs-fs.js`) | Git offline (init/add/commit/log) + push via `gitCorsProxy`. ✅ (S2) |
+| **Security**        | Web Crypto API                        | AES-GCM encryption for storing GitHub PATs and LLM API keys locally. ✅ (S2)       |
 | **Icons**           | Lucide Icons (SVG inline)             | Lightweight, scalable SVG integration.                                             |
-| **Testing**         | Vitest + Playwright                   | **Unit/integration: Vitest 37 verdes** (`fake-indexeddb`); E2E (Playwright) planejado na Fase 5. |
+| **Testing**         | Vitest + jsdom + `fake-indexeddb`     | **79 testes verdes**; E2E (Playwright) planejado. |
 
 ---
 
@@ -203,11 +205,11 @@ export class BaseAgent {
 
 | Phase             | Focus Area                          | Key Deliverables                                                                          | Status      |
 | ----------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- | ----------- |
-| **Phase 1** | **Infrastructure & PWA Core** | App shell **Framework7** + Vite 8 + PWA, manifest, sw.js, firebase.json, logo/dark theme. | ✅ Complete |
-| **Phase 2** | **Storage & Versioning**      | VFS (Dexie) ✅ · `lightning-fs` + isomorphic-git wrapper (`git-service.js`) pendentes.     | 🔄 Em andamento |
-| **Phase 3** | **Editing & Rendering**       | Explorer/Editor/Viewer parciais; **S4.5 Layout IDE aprovado** (activity bar + bottom sheet); falta toolbar flutuante iOS e Diff. | 🔄 Em andamento |
-| **Phase 4** | **AI Orchestration**          | `AgentManager`, Driver implementations, LLM streaming connections (demo local só).          | ⏳ Pending  |
-| **Phase 5** | **Security & Polish**         | Web Crypto PAT encryption, UI/UX animations, safe-area adjustments, offline testing.      | ⏳ Pending  |
+| **Phase 1** | **Infrastructure & PWA Core** | App shell (JS puro) + Vite 8 + PWA, manifest, sw.js, firebase.json, logo/dark theme. | ✅ Complete |
+| **Phase 2** | **Storage & Versioning**      | VFS (Dexie) ✅ · `git-service.js` (isomorphic-git + `vfs-fs`) ✅ · SecurityService AES-GCM ✅. | ✅ Complete |
+| **Phase 3** | **Editing & Rendering**       | Explorer ✅ · Editor ✅ · Viewer ✅ · **S4.5 Layout IDE** (activity bar + bottom sheet + toolbar flutuante iOS) ✅. | ✅ Complete |
+| **Phase 4** | **AI Orchestration**          | `AgentManager` ✅ · Drivers (JSON/XML) ✅ · failover multi-API + streaming/thinking/abort/contexto ✅. | ✅ Complete |
+| **Phase 5** | **Security & Polish**         | Web Crypto PAT/API keys ✅ · CSP/security headers ✅ · XSS viewer ✅ · gitCorsProxy blindado ✅ · offline (S17) ⏳ device real. | 🔄 Quase (device real) |
 
 ---
 
@@ -215,22 +217,22 @@ export class BaseAgent {
 
 ### 6.1 Chat & AI Interaction
 
-* [ ] Connect securely to external LLM APIs (DeepSeek, Qwen) using fetch streams.
-* [ ] Render Markdown and syntax-highlighted code blocks dynamically within the chat.
-* [ ] Expose an interactive "Thinking Process" toggle for complex model reasoning.
-* [ ] Implement user-approval popups for destructive AI file operations.
+* [x] Connect securely to external LLM APIs (DeepSeek, Qwen) using fetch streams. *(failover multi-API, streaming — S8/S14)*
+* [x] Render Markdown and syntax-highlighted code blocks dynamically within the chat. *(marked + DOMPurify sanitização)*
+* [x] Expose an interactive "Thinking Process" toggle for complex model reasoning. *(`reasoning_content` — S7)*
+* [ ] Implement user-approval popups for destructive AI file operations. *(diff aceitar/rejeitar cobre a revisão; popup de confirmação de exclusão no explorer ✅)*
 
 ### 6.2 Code Editing Experience
 
-* [ ] Ensure CodeMirror 6 responds smoothly to touch-and-drag selection.
+* [ ] Ensure CodeMirror 6 responds smoothly to touch-and-drag selection. *(device real ⏳)*
 * [x] Maintain cursor position and file state across tab switches.
-* [ ] Implement semantic file search within the local directory structure.
+* [ ] Implement semantic file search within the local directory structure. *(roadmap pós-Go-Live)*
 
 ### 6.3 File Management & Git
 
 * [x] Visual file tree with collapsible directories.
-* [ ] One-click staging and committing process.
-* [ ] Conflict resolution UI (fallback to manual text editing if Git merge fails).
+* [x] One-click staging and committing process. *(Git pane: init/status/stage/commit/log)*
+* [ ] Conflict resolution UI (fallback to manual text editing if Git merge fails). *(roadmap)*
 
 > **Novo (15/08):** Visualizador de arquivos (S3.5) — preview de Markdown/imagem/HTML/PDF/CSV/DOCX/XLSX/PPTX com lazy-load; wireframes e crítica em `implementation.md`.
 
@@ -238,10 +240,10 @@ export class BaseAgent {
 
 ## 7. Non-Functional Requirements & Performance Targets
 
-* **Bundle Size:** Core JavaScript application must remain under 500KB (gzipped).
+* **Bundle Size:** Core JavaScript application must remain under 500KB (gzipped). *(hoje ~156KB gzip)*
 * **Time to Interactive (TTI):** Under 1.5 seconds on a standard 4G mobile connection.
 * **Memory Management:** Aggressive garbage collection of old chat streams and diffs to prevent Safari tab crashes on older iPhones.
-* **Security Standard:** Strict Content Security Policy (CSP) headers applied via `firebase.json`. No `eval()` allowed.
+* **Security Standard:** Strict Content Security Policy (CSP) headers applied via `firebase.json`. No `eval()` allowed. *(CSP ao vivo em caim.web.app — S18)*
 
 ---
 

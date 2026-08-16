@@ -173,13 +173,13 @@ flowchart TD
 
 ## Matriz Workflow × Sprint de Homologação
 
-| # | Workflow                    | Fluxos testados                    | Sprint |
-|---|-----------------------------|------------------------------------|--------|
-| J1 | Autenticação & Onboarding   | signup, login, rules, seed owner   | S13    |
-| J2 | Config de APIs              | 3 chaves, prioridade, failover     | S14    |
-| J3 | Geração do MVP              | chat→agente→LLM→arquivos           | S15    |
-| J4 | Revisão (Diff)              | aceitar/rejeitar, minified          | S15    |
-| J5 | Publicar MVP                | CF deploy, Pages, Firestore         | S16    |
-| J6 | Uso da IDE                  | explorer/editor/viewer/git          | S16    |
-| J7 | Offline & PWA               | modo avião, bundle, atualização     | S17    |
-| -  | Segurança & Go Live         | App Check, Lighthouse, iPhones      | S18–S19 |
+| # | Workflow                    | Fluxos testados                    | Sprint | Cobertura automatizada (16/08) |
+|---|-----------------------------|------------------------------------|--------|--------------------------------|
+| J1 | Autenticação & Onboarding   | signup, login, rules, seed owner   | S13    | VFS + auth-gate (boot sem flash) |
+| J2 | Config de APIs              | 3 chaves, prioridade, failover     | S14    | 🧪 `auth-views` + `agent-manager` (failover/cifragem/persistência) |
+| J3 | Geração do MVP              | chat→agente→LLM→arquivos           | S15    | 🧪 `agent-manager` (streaming/thinking/truncamento/contexto/abort) + `tool-executor` |
+| J4 | Revisão (Diff)              | aceitar/rejeitar, minified          | S15    | 🧪 `diff-viewer` (blocos aceitar/rejeitar, minified, CRLF) |
+| J5 | Publicar MVP                | CF deploy, Pages, Firestore         | S16    | 🧪 `git-service` offline · proxy ao vivo (GitHub 200 / host externo 403) |
+| J6 | Uso da IDE                  | explorer/editor/viewer/git          | S16    | 🧪 `file-tree` + `viewer` + `git-service` |
+| J7 | Offline & PWA               | modo avião, bundle, atualização     | S17    | bundle 156KB gzip + SW precache verificados |
+| -  | Segurança & Go Live         | App Check, Lighthouse, iPhones      | S18–S19 | 🧪 viewer XSS + path traversal + CSP/headers ao vivo · ⏳ device real |

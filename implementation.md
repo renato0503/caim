@@ -556,12 +556,14 @@ S6 ──► S7 ──► S8 ─────────────────
 
 ## Estratégia de Testes
 
-| Camada        | Ferramenta | Escopo                                                                 |
-| ------------- | ---------- | ---------------------------------------------------------------------- |
-| **Unitários** | Vitest     | Drivers (parsing), VFS (CRUD/path), git-service (comandos), security.  |
-| **Integração**| Vitest + jsdom | VFS ↔ Git, Drivers ↔ Tool Executor, editor ↔ auto-save.            |
-| **E2E**       | Playwright | 3 fluxos principais: chat→tools, file CRUD, git workflow completo.     |
-| **Mobile**    | Testes manuais | iPhones reais (Safari), modo avião, safe-areas, teclado flutuante. |
+| Camada        | Ferramenta | Escopo                                                                 | Status (16/08) |
+| ------------- | ---------- | ---------------------------------------------------------------------- | -------------- |
+| **Unitários** | Vitest     | Drivers (parsing), VFS (CRUD/path), git-service (comandos), security.  | ✅ 79 verdes   |
+| **Integração**| Vitest + jsdom | VFS ↔ Git, Drivers ↔ Tool Executor, diff ↔ aceitar/rejeitar, explorer, viewer XSS, failover/Settings, streaming/thinking/abort. | ✅ 79 verdes |
+| **E2E**       | Playwright | 3 fluxos principais: chat→tools, file CRUD, git workflow completo.     | ⏳ planejado   |
+| **Mobile**    | Testes manuais | iPhones reais (Safari), modo avião, safe-areas, teclado flutuante. | ⏳ device real |
+
+> Os fluxos documentados em `docs/diagrams/workflows.md` (ciclo do agente, navegação, preview, git, layout) têm cobertura automatizada apontada em cada diagrama (ver também a matriz em `docs/diagrams/journey.md`).
 
 > **Regra:** cada sprint entrega seus testes junto do código. Sprint só é "done" com testes verdes.
 
