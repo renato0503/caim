@@ -1,0 +1,10 @@
+node_modules
+dist
+public
+.firebase
+.DS_Store
+*.log
+.env
+.env.local
+.idea
+.vscode
