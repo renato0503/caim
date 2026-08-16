@@ -1479,16 +1479,16 @@ body.crt-effect::before {
 .auth-title {
   text-align: center;
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 32px;
   letter-spacing: normal;
   margin: 0;
-  color: var(--accent);
+  color: #2dd4bf;
   text-shadow:
-    3px 0 0 var(--accent-press),
-    -3px 0 0 var(--accent-press),
-    0 3px 0 var(--accent-press),
-    0 -3px 0 var(--accent-press),
-    5px 5px 0 var(--pixel-shadow);
+    2px 0 0 #14b8a6,
+    -2px 0 0 #14b8a6,
+    0 2px 0 #14b8a6,
+    0 -2px 0 #14b8a6,
+    4px 4px 0 #020617;
 }
 
 .auth-subtitle,
