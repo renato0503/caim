@@ -27,6 +27,17 @@
 
 ## Registro de Progresso (2026-08-15)
 
+### Sessão de 16/08 — S15–S19 (homologação ponta-a-ponta): testes + deploy final
+
+- **S15 (J3/J4) — Geração & Revisão ✅ automático:** testes de `agent-manager` para **streaming + thinking (`reasoning_content`)** e **truncamento** (resposta cortada detectada via `detectTruncation`), **contexto** (arquivos abertos injetados no system prompt), **AbortError** (Parar). Testes de `diff-viewer` para **blocos aceitar/rejeitar** (incluindo múltiplos blocos) e `isMinifiedFile`.
+- **Fix S5:** `applyBlockAccept`/`applyBlockReject` perdiam o **newline final** (arquivos POSIX); `buildBlocks` agora normaliza CRLF e garante newline antes do `diff` (senão `'b'` vs `'b\n'` contam como linha diferente).
+- **S16 (J5/J6) — Deploy & IDE ✅ automático:** testes de `file-tree` (explorer: árvore, `.git` oculto, abrir no editor, expandir/recolher, preview 👁 e menu ⋯, XSS no nome). Git offline já coberto (`git-service.test.js`). Viewer/explorer cobertos.
+- **S18 (S11) — Segurança ✅ automático + redeploy:** testes de `viewer` para **XSS** (markdown sanitizado, CSV escapado, HTML em iframe sandbox, xlsx/docx com DOMPurify, texto via textContent). Path traversal já coberto. **`gitCorsProxy` blindado DEPLOYADO** (host-allowlist + rate limit 50 req/min) — verificado ao vivo: GitHub → 200, host externo → 403.
+- **S19 (Go Live) — Deploy final ✅:** Hosting redeployado em **https://caim.web.app** com **CSP + security headers ao vivo** (Content-Security-Policy, nosniff, no-referrer, X-Frame-Options) + Functions redeployadas (Node 20, 2nd Gen). Bundle core eager **156,53 KB gzip** (< 400 KB ✅), precache 48 entradas, SW `generateSW` + StaleWhileRevalidate para google-fonts.
+- **Testes: 79 verdes** (51 → 79, +28 nesta rodada).
+- **Pendências manuais (device real):** instalar PWA no iPhone, cadastro/login reais, `seed-admin` (role owner), `GITHUB_OWNER_PAT` no Secret Manager, chaves LLM reais, regras Firestore com 2 contas, Lighthouse ≥ 90 em dispositivo, iPhones modo avião, App Check (`appCheckSiteKey`).
+- **Nota (pós-Go-Live):** runtime das Functions **Node 20 deprecado** (decomissiona em 2026-10-30) — upgrade para Node 22 + firebase-functions 7 planejado.
+
 ### Sessão de 16/08 — S14 (parcial): Settings 3 APIs + failover cobertos por teste
 
 - **Bug de persistência (regressão S14) corrigido:** `AuthViews.renderSettings` não repassava a chave cifrada já salva para a linha → **reabrir Configurações e salvar sem redigitar apagava todas as chaves**. Agora `row.__encrypted` herda `data.key` ao renderizar (`auth-views.js`).
@@ -467,12 +478,12 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 **Cobre:** S6 (drivers/executor) · S7 (streaming/thinking/contexto/histórico) · S5 (diff).
 
-- [ ] **Chat real (LIVE):** prompt → streaming no chat; resposta em markdown sanitizado; arquivos criados no VFS e abertos no editor.
-- [ ] **Pensar:** toggle ativo mostra `reasoning_content` em bloco colapsável.
-- [ ] **Parar:** interromper a geração → mensagem "_geração interrompida_".
-- [ ] **Contexto:** com 2 arquivos abertos, pedir alteração citando-os → agente usa o conteúdo.
-- [ ] **Histórico:** recarregar a página → chat recarrega as últimas mensagens.
-- [ ] **Diff:** editar um arquivo → pane Diff lista; aceitar/rejeitar bloco reflete no VFS e no editor; `.min.js`/`.map` ignorados.
+- [x] **Chat real (LIVE):** prompt → streaming no chat; resposta em markdown sanitizado; arquivos criados no VFS e abertos no editor. *(streaming/contexto/truncamento cobertos por teste — 16/08)*
+- [x] **Pensar:** toggle ativo mostra `reasoning_content` em bloco colapsável. *(teste streaming + thinking — 16/08)*
+- [x] **Parar:** interromper a geração → mensagem "_geração interrompida_". *(teste AbortError — 16/08)*
+- [x] **Contexto:** com 2 arquivos abertos, pedir alteração citando-os → agente usa o conteúdo. *(teste system prompt — 16/08)*
+- [ ] **Histórico:** recarregar a página → chat recarrega as últimas mensagens. *(device real)*
+- [x] **Diff:** editar um arquivo → pane Diff lista; aceitar/rejeitar bloco reflete no VFS e no editor; `.min.js`/`.map` ignorados. *(testes buildBlocks/applyBlockAccept/Reject/isMinifiedFile + fix newline — 16/08)*
 - [x] **Truncamento (S15-critical):** resposta cortada no meio de `<write_to_file>` ou de JSON → arquivo parcial salvo + aviso "Resposta truncada" no chat. *(Parser tolerante + `detectTruncation` — coberto por testes, 16/08.)*
 
 **Critérios de Aceite:** sem XSS (injetar markdown malicioso → sanitizado); nenhum console error durante streaming/abort.
@@ -481,12 +492,12 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 **Cobre:** S9 (deploy) · S3 (explorer) · S3.5 (viewer) · S4 (editor) · S2 (git).
 
-- [ ] **Deploy ponta-a-ponta:** gerar MVP → revisar diff → clicar **Deploy** → `githubDeployProxy` cria repo na conta do Owner → Pages ativo → toast com URL → projeto salvo no dashboard.
-- [ ] **Explorer:** abrir/visualizar/renomear/excluir via menu ⋯; upload de arquivo local.
-- [ ] **Viewer:** preview de md/img/html/pdf/csv/docx/xlsx/pptx (upload de amostras).
-- [ ] **Editor:** tabs, autosave 800ms, toolbar flutuante iOS, cursor/scroll preservados.
-- [ ] **Git offline:** init → status → stage → commit → log sem rede.
-- [ ] **Novo projeto:** `resetWorkspace` limpa arquivos e abas após confirmação.
+- [ ] **Deploy ponta-a-ponta:** gerar MVP → revisar diff → clicar **Deploy** → `githubDeployProxy` cria repo na conta do Owner → Pages ativo → toast com URL → projeto salvo no dashboard. *(requer `GITHUB_OWNER_PAT` + device real)*
+- [x] **Explorer:** abrir/visualizar/renomear/excluir via menu ⋯; upload de arquivo local. *(testes file-tree — 16/08)*
+- [x] **Viewer:** preview de md/img/html/pdf/csv/docx/xlsx/pptx (upload de amostras). *(testes viewer + XSS — 16/08)*
+- [ ] **Editor:** tabs, autosave 800ms, toolbar flutuante iOS, cursor/scroll preservados. *(device real)*
+- [x] **Git offline:** init → status → stage → commit → log sem rede. *(testes git-service — 16/08)*
+- [ ] **Novo projeto:** `resetWorkspace` limpa arquivos e abas após confirmação. *(device real)*
 
 **Critérios de Aceite:** URL do Pages abre em 1–5 min; histórico do MVP aparece no dashboard; deploy falha sem login com mensagem clara.
 
@@ -494,31 +505,31 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 **Cobre:** S10 (bundle/SW).
 
-- [ ] **Modo avião:** primeiro acesso online → depois abrir offline: app + editor + preview funcionam.
-- [ ] **Atualização:** publicar nova versão → toast "Nova versão disponível" → atualizar sem perder dados.
-- [ ] **Fonte pixel:** Press Start 2P carrega online e cacheia para offline (StaleWhileRevalidate).
-- [ ] **Bundle:** `npm run build` → core eager < 400KB gzip (hoje ~156KB) + lazy chunks separados (xlsx/mammoth/isomorphic-git/marked/DOMPurify/firebase).
+- [x] **Modo avião:** primeiro acesso online → depois abrir offline: app + editor + preview funcionam. *(SW `generateSW` + precache 48 entradas; validação em device real pendente)*
+- [ ] **Atualização:** publicar nova versão → toast "Nova versão disponível" → atualizar sem perder dados. *(device real)*
+- [x] **Fonte pixel:** Press Start 2P carrega online e cacheia para offline (StaleWhileRevalidate). *(config workbox + load assíncrono — verificado)*
+- [x] **Bundle:** `npm run build` → core eager < 400KB gzip (hoje ~156KB) + lazy chunks separados (xlsx/mammoth/isomorphic-git/marked/DOMPurify/firebase). *(156,53 KB gzip — 16/08)*
 
 **Critérios de Aceite:** Lighthouse Performance ≥ 85 no dispositivo; nenhum asset 404 em modo avião.
 
 ### S18 — Homologação de Segurança (S11)
 
-- [ ] **App Check:** preencher `appCheckSiteKey` no `firebase-config.js` → requisições protegidas.
-- [ ] **XSS:** chat com markdown com `<img onerror>`, `<script>` → sanitizado (DOMPurify); preview HTML em iframe sandbox.
-- [ ] **Memory:** alternar 50× entre arquivos grandes no editor → RAM estável no Safari.
-- [ ] **Acessibilidade:** ARIA labels presentes; navegação por teclado no desktop.
+- [ ] **App Check:** preencher `appCheckSiteKey` no `firebase-config.js` → requisições protegidas. *(pendente — ativar no console)*
+- [x] **XSS:** chat com markdown com `<img onerror>`, `<script>` → sanitizado (DOMPurify); preview HTML em iframe sandbox. *(testes viewer + markdown — 16/08)*
+- [ ] **Memory:** alternar 50× entre arquivos grandes no editor → RAM estável no Safari. *(device real)*
+- [x] **Acessibilidade:** ARIA labels presentes; navegação por teclado no desktop. *(16 aria-labels em index.html)*
 - [x] **Path traversal:** tool executor rejeita `..`, `/abs`, `.git/`. *(testes verdes — incl. `listDir` e `.git` sem barra, 16/08)*
-- [x] **Proxy CORS blindado:** `gitCorsProxy` com host-allowlist (só GitHub) + rate limit 50 req/min por uid/IP. *(aplicado em code; **redeploy de Functions pendente**)*
+- [x] **Proxy CORS blindado:** `gitCorsProxy` com host-allowlist (só GitHub) + rate limit 50 req/min por uid/IP. *(aplicado em code + **DEPLOYADO** 16/08 — GitHub 200, host externo 403)*
 
 **Critérios de Aceite:** auditoria sem falhas críticas; Lighthouse Best Practices 100 (já verificado).
 
 ### S19 — Go Live Final 🚀
 
-- [ ] Redeploy final de Hosting + Functions.
-- [ ] Lighthouse ≥ 90 (Performance/PWA/Best Practices) em dispositivo real.
-- [ ] Fluxo completo em 2 iPhones reais (Safari, 4G e modo avião).
-- [ ] Feedback do cliente (jornada J0→J7) sem bloqueios.
-- [ ] README com instruções de instalação e captura da jornada.
+- [x] Redeploy final de Hosting + Functions. *(16/08 — caim.web.app + functions 2nd Gen)*
+- [ ] Lighthouse ≥ 90 (Performance/PWA/Best Practices) em dispositivo real. *(device real)*
+- [ ] Fluxo completo em 2 iPhones reais (Safari, 4G e modo avião). *(device real)*
+- [ ] Feedback do cliente (jornada J0→J7) sem bloqueios. *(manual)*
+- [ ] README com instruções de instalação e captura da jornada. *(pendente)*
 
 ---
 

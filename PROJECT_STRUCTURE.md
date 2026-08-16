@@ -44,7 +44,7 @@
 - `src/css/main.css` — Design tokens + layout IDE + auth/dashboard/settings + diff + git.
 - `src/test/setup.js` — setup do Vitest (`fake-indexeddb` + `resetIndexedDB()`).
 - `vitest.config.js` — config isolada do Vite (sem plugin PWA) para os testes.
-- `src/**/*.test.js` — **51 testes verdes (16/08)**: `vfs-service`, `event-emitter`, `security-service`, `tool-executor`, `agents/drivers/drivers`, `git/git-service` (git offline), `agents/agent-manager` (failover), `ui/auth-views` (Settings).
+- `src/**/*.test.js` — **79 testes verdes (16/08)**: `vfs-service`, `event-emitter`, `security-service`, `tool-executor`, `agents/drivers/drivers`, `git/git-service` (git offline), `agents/agent-manager` (failover + streaming/thinking/abort/contexto), `ui/auth-views` (Settings), `ui/diff-viewer` (blocos aceitar/rejeitar), `ui/file-tree` (explorer), `ui/viewer` (XSS).
 
 ## Functions (`functions/`)
 
@@ -72,13 +72,12 @@
 
 ## Roadmap (pendências)
 
-1. **S13 🔄** — parte automática ✅ (VFS/auth-gate/testes git offline); **device real**: PWA install, cadastro/login, `seed-admin`, `GITHUB_OWNER_PAT`, regras com 2 contas.
-2. **S14 🔄** — automação ✅ (Settings 3 APIs cifradas + failover cobertos por teste); **device real**: chaves reais no Firestore.
-3. **S15–S19** — homologação da jornada J3–J7 (geração+diff, deploy+IDE, offline, segurança, Go Live); ver `docs/diagrams/journey.md`.
-4. **S11 🔄** — ativar App Check (`appCheckSiteKey`), auditoria memória (S18).
-5. **S18/S19** — **redeploy de Functions** (hardening do `gitCorsProxy` já no code); Lighthouse ≥ 90, iPhones reais.
-6. **Postergadas** — KiloDriver, conflitos de merge, virtualização da árvore, swipe de gestos.
-7. **Roadmap pós-Go-Live** — chaves LLM só-locais (opção), Cloud Sync (RxDB) multi-device, colaboração (ver `context.md` §12).
+1. **S13–S19 — homologação ✅ automática** (testes + hardening + deploy final 16/08); **device real ⏳**: PWA install, cadastro/login, `seed-admin`, `GITHUB_OWNER_PAT`, chaves LLM, regras com 2 contas, Lighthouse ≥ 90, modo avião, 2 iPhones.
+2. **S11 🔄** — ativar App Check (`appCheckSiteKey`), auditoria memória (S18).
+3. **Node 20 → 22 nas Functions** (runtime deprecado — decomissiona 2026-10-30).
+4. **README de instalação** + captura da jornada (S19).
+5. **Postergadas** — KiloDriver, conflitos de merge, virtualização da árvore, swipe de gestos.
+6. **Roadmap pós-Go-Live** — chaves LLM só-locais (opção), Cloud Sync (RxDB) multi-device, colaboração (ver `context.md` §12).
 
 ## Planned Architecture (alvo)
 

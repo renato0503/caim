@@ -135,7 +135,7 @@ flowchart TD
 ```
 
 **Regra de ouro:** o PAT do Owner **nunca** existe no frontend; tudo passa pela CF autenticada com o ID token do cliente.
-**Hardening (16/08):** `gitCorsProxy` agora tem **host-allowlist** (só GitHub) + **rate limit 50 req/min** por uid autenticado ou IP — *redeploy de Functions pendente*.
+**Hardening (16/08):** `gitCorsProxy` com **host-allowlist** (só GitHub) + **rate limit 50 req/min** por uid autenticado ou IP — **DEPLOYADO** (verificado: GitHub → 200, host externo → 403).
 
 ---
 
@@ -167,7 +167,7 @@ flowchart TD
     SW --> UP[Nova versão → toast Atualizar]
 ```
 
-**Bundle (S10):** core eager ~156KB gzip + CSS 5,6KB (F7 removido, CodeMirror minimal). Lazy: xlsx/mammoth/isomorphic-git/marked/DOMPurify/firebase. **Fonte pixel** (Press Start 2P) carregada fora do caminho crítico de render + `preload` do icon (S12/S17).
+**Bundle (S10):** core eager **~156KB gzip** + CSS 5,6KB (F7 removido, CodeMirror minimal). Lazy: xlsx/mammoth/isomorphic-git/marked/DOMPurify/firebase. **Fonte pixel** (Press Start 2P) carregada fora do caminho crítico de render + `preload` do icon (S12/S17). **CSP/security headers** ativos em https://caim.web.app (S18/S19).
 
 ---
 
