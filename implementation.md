@@ -16,16 +16,23 @@
 6. [Fase 3 — AI Agent & Context Layer (Step 4)](#fase-3--ai-agent--context-layer-step-4)
 7. [Fase 4 — Integração, Hardening & Deploy (Step 5)](#fase-4--integração-hardening--deploy-step-5)
 8. [Fase 5 — Homologação Ponta-a-Ponta (S13–S19)](#fase-5--homologação-ponta-a-ponta-s13s19)
-9. [Dependências entre Sprints](#dependências-entre-sprints)
-10. [Estratégia de Testes](#estratégia-de-testes)
-11. [Estrutura de Pastas Alvo](#estrutura-de-pastas-alvo)
-12. [Matriz de Riscos & Mitigação](#matriz-de-riscos--mitigação)
-13. [Critérios de Go Live](#critérios-de-go-live)
-14. [Pós-Go-Live & Rollback](#pós-go-live--rollback)
+9. [Fase 6 — Correções da Auditoria (S20–S26)](#fase-6--correções-da-auditoria-s20s26)
+10. [Dependências entre Sprints](#dependências-entre-sprints)
+11. [Estratégia de Testes](#estratégia-de-testes)
+12. [Estrutura de Pastas Alvo](#estrutura-de-pastas-alvo)
+13. [Matriz de Riscos & Mitigação](#matriz-de-riscos--mitigação)
+14. [Critérios de Go Live](#critérios-de-go-live)
+15. [Pós-Go-Live & Rollback](#pós-go-live--rollback)
 
 ---
 
 ## Registro de Progresso (2026-08-15)
+
+### Sessão de 16/08 — Auditoria cruzada J0–J7 × Workflows → Fase 6 (S20–S26)
+
+- **Auditoria executada** (cruzando `journey.md` × `workflows.md`) identificou gaps de produção em 7 áreas. **Pontos já resolvidos no código** (auditoria estava desatualizada): limite de 1MB no `tool-executor`/VFS já existe; botão Deploy já existe no header; firestore.rules já permitem `create` por owner (`request.auth.uid == uid`).
+- **Gaps reais catalogados** e transformados em **Fase 6 — S20–S26**: S20 auth resiliente (senha/email/token expirado), S21 APIs (failover UX/validar chave/editar), S22 geração (contexto 16KB/continue-truncation/custo), S23 diff (create/delete/rename/conflito), S24 deploy (polling Pages/export ZIP/push pendente/rollback), S25 offline (storage pressure/persist/estado offline), S26 segurança (pdf.js/limite upload/rate limit dinâmico).
+- **Nota técnica:** BackgroundSync não é suportado no iOS Safari — mitigado por polling de Pages + aviso de rede (documentado em S25).
 
 ### Sessão de 16/08 — S15–S19 (homologação ponta-a-ponta): testes + deploy final
 
@@ -161,6 +168,13 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 | S17 | Homologação — PWA & Performance        | 5    | J7: modo avião, bundle, atualização              | 🔄 Parcial (device real ⏳) |
 | S18 | Homologação — Segurança                | 5    | App Check, XSS, memória, firestore.rules         | 🔄 Parcial (XSS/path/proxy ✅) |
 | S19 | Go Live Final 🚀                       | 5    | Lighthouse, iPhones reais, deploy final          | 🔄 Parcial (deploy ✅) |
+| S20 | Correção — Auth Resiliente (J1)        | 6    | Recuperar senha, email, token expirado, seed     | ⏳ Pending |
+| S21 | Correção — APIs & Failover UX (J2)     | 6    | Validar chave, mensagens claras, editar chave    | ⏳ Pending |
+| S22 | Correção — Geração & Contexto (J3)     | 6    | Contexto 16KB, continue-truncation, custo        | ⏳ Pending |
+| S23 | Correção — Diff & Revisão (J4)         | 6    | Diff create/delete/rename, conflito de edição    | ⏳ Pending |
+| S24 | Correção — Deploy & IDE (J5/J6)        | 6    | Polling Pages, export ZIP, push pendente         | ⏳ Pending |
+| S25 | Correção — PWA & Offline (J7)          | 6    | Storage pressure, estado offline, eviction       | ⏳ Pending |
+| S26 | Correção — Segurança & Viewer (S18)    | 6    | pdf.js, tamanho VFS, rate limit dinâmico         | ⏳ Pending |
 
 ---
 
@@ -533,6 +547,92 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 ---
 
+## Fase 6 — Correções da Auditoria (S20–S26)
+
+> Auditoria cruzada `journey.md` (J0–J7) × `workflows.md` (Mermaid) executada em **16/08/2026** identificou gaps de produção em auth, APIs, geração, diff, deploy, offline e segurança. Cada sprint corrige um grupo de workflows na ordem cronológica da jornada. **Regra:** cada sprint entrega testes junto do código (regra global).
+
+### S20 — Correção: Auth Resiliente (J1) 🔴 CRÍTICO
+
+**Cobre:** `auth-service.js` · `auth-views.js` · `firestore.rules`.
+
+- [ ] **Recuperação de senha:** link "Esqueci minha senha" na tela de login → `authService.sendPasswordReset(email)` (`sendPasswordResetEmail` do Firebase Auth) → toast "Enviamos um link para seu email".
+- [ ] **Email verification:** `authService.isEmailVerified()` exibida no dashboard (badge "Email não verificado" + reenviar link).
+- [ ] **Token expirado/desativado:** `onAuthError` handler — `auth/user-token-expired` → diálogo "Sessão expirada, entre novamente"; `auth/user-disabled` → diálogo claro de conta desativada (hoje: loop silencioso de auth-gate).
+- [ ] **Bootstrap do seed:** garantir que `users/{uid}` possa ser criado mesmo antes do `seed-admin` rodar (regra de `create` já permite `request.auth.uid == uid` — validar em teste de rules).
+- [ ] Testes: `auth-service.test.js` (reset/verification), `auth-views.test.js` (link + diálogos).
+
+**Critérios de Aceite:** usuário recupera senha sem intervenção manual; conta desativada não entra em loop; zero erros não tratados no fluxo de auth.
+
+### S21 — Correção: APIs & Failover UX (J2) 🟠 ALTO
+
+**Cobre:** `agent-manager.js` · `auth-views.js` (Settings).
+
+- [ ] **Falha total das chaves:** mensagem específica "Todas as suas chaves LLM falharam. Verifique saldos, permissões e o estado de cada chave em Configurações." em vez de erro de rede genérico.
+- [ ] **Editar chave existente:** permitir sobrescrever `baseUrl`/`model`/`priority` de uma chave salva sem apagar e recriar (o campo de chave continua vazio ao reabrir; edição de metadata preserva o ciphertext).
+- [ ] **Validar chave ao salvar:** botão "Testar" por linha → `testConnection()` com prompt mínimo (`{"messages":[{"role":"user","content":"Hi"}]}`) antes de persistir; mostra "Chave válida" ou o erro da API.
+- [ ] **Rate limit dinâmico no proxy** (S26 também toca): owners com maior cota — ver S26.
+
+**Critérios de Aceite:** erro claro quando todas as chaves falham; chave inválida detectada no save; metadata editável sem perder a chave.
+
+### S22 — Correção: Geração & Contexto (J3) 🔴 CRÍTICO
+
+**Cobre:** `agent-manager.js` · `editor.js` · `tool-executor.js` · chat UI.
+
+- [ ] **Contexto dinâmico (16KB):** `getOpenFilesContext(maxBytes = 16384)` com priorização — 1) arquivo ativo, 2) arquivos sujos, 3) `.json` de config, 4) demais abertos; corta do menos relevante em vez de truncar o 4º arquivo no meio.
+- [ ] **Continue from truncation:** após `detectTruncation`, oferecer botão "Continuar geração" no chat que reenvia `{"prompt": "continue o arquivo X de onde parou: …últimos 500 chars…"}` mantendo o contexto dos arquivos já criados.
+- [ ] **Custo visível:** estimativa de tokens usados (entrada+saída) exibida no rodapé do chat após cada resposta (`max_tokens` não requerido; estimativa por caracteres/4).
+- [ ] **Binários na geração:** documentar limitação (tool `write_file` é texto) e exibir aviso no chat se a IA tentar criar `.png`/`.pdf` ("arquivo binário não suportado na geração — use upload").
+
+**Critérios de Aceite:** 4 arquivos pequenos entram no contexto sem cortar o mais importante; truncamento tem continuidade em 1 toque; custo aproximado visível.
+
+### S23 — Correção: Diff & Revisão (J4) 🟠 ALTO
+
+**Cobre:** `diff-viewer.js` · `editor.js` · `tool-executor.js`.
+
+- [ ] **Diff de create/delete:** `buildBlocks(old, new, oldPath, newPath)` — arquivo sem `old` → bloco `create`; sem `new` → bloco `delete` (mostra "arquivo será excluído"); rename (`oldPath !== newPath`) → bloco `rename` com destaque.
+- [ ] **Arquivo binário no diff:** bloquear diff de `.png`/`.pdf`/etc com aviso "diff não disponível para binários — aceitar/rejeitar por arquivo inteiro".
+- [ ] **Conflito de edição simultânea:** se a IA gravar `vfs:changed` num arquivo que o usuário está editando (dirty), não sobrescrever silenciosamente — marcar conflito e pedir escolha (manter local / usar IA).
+- [ ] **Bloqueio de execução:** tool `delete_file` que remove arquivo aberto no editor → confirmar no diff antes (já existe confirmação no explorer; estender para o fluxo de agentes).
+
+**Critérios de Aceite:** delete/rename visíveis no diff antes do commit; binário não quebra o viewer; nenhuma edição do usuário sobrescrita sem aviso.
+
+### S24 — Correção: Deploy & IDE (J5/J6) 🟠 ALTO
+
+**Cobre:** `app.js` (deploy) · `functions/src/index.js` · `git-panel.js` · editor/explorer.
+
+- [ ] **Polling do GitHub Pages:** após o deploy, `waitForPagesLive(url, 300s)` com HEAD a cada 5s — mostra "O GitHub está construindo… (aguarde até 5min)" e só então o toast de sucesso com botão Abrir.
+- [ ] **Estado de deploy no header:** spinner/badge "Publicando…" no `#deploy-btn` durante a operação (evita duplo clique).
+- [ ] **Exportar ZIP:** botão "Exportar" no Git pane → `exportProjectAsZip()` (JSZip) baixa o projeto (VFS sem `.git`).
+- [ ] **Push pendente:** ao voltar online (`window.addEventListener('online')`), se há commits locais sem `origin` → badge "push pendente" no Git pane + toast.
+- [ ] **Rollback:** salvar o estado do VFS (`vfs:changed` snapshot) antes de cada deploy → histórico de deploys com "republicar versão anterior". *(Escopo: guardar snapshot por deploy no Firestore.)*
+
+**Critérios de Aceite:** toast de sucesso só quando o Pages responder 200; deploy não duplica ao tocar 2×; ZIP exporta o projeto; push pendente visível após reconnect.
+
+### S25 — Correção: PWA & Offline (J7) 🟠 ALTO
+
+**Cobre:** `app.js` · `vfs-service.js` · SW (`vite.config.js`).
+
+- [ ] **Storage pressure:** ao abrir a IDE, `navigator.storage.estimate()` → se `usage/quota > 0.9`, aviso "Seu dispositivo está sem espaço — faça commit e push para não perder código".
+- [ ] **Estado Offline no header:** ícone de avião quando `navigator.onLine === false` (via `online`/`offline` events) + aviso quando um deploy é tentado offline.
+- [ ] **`persist()` da Storage API:** pedir `navigator.storage.persist()` no bootstrap para reduzir risco de eviction do IndexedDB no Safari (quando disponível; degrada silencioso).
+- [ ] **Snapshot pré-deploy (sinergia S24):** garantir que o VFS grava antes do deploy (flush de autosaves pendentes via `editor.saveActive()`).
+- [ ] Documentar limitação: **BackgroundSync** não é suportado no iOS Safari — mitigado pelo polling de Pages (S24) + aviso de rede.
+
+**Critérios de Aceite:** aviso de storage quando o dispositivo está >90%; badge offline visível; `persist()` requisitado sem erro.
+
+### S26 — Correção: Segurança & Viewer (S18) 🟠 ALTO
+
+**Cobre:** `viewer.js` · `vfs-service.js` · `functions/src/index.js`.
+
+- [ ] **PDF via pdf.js:** substituir iframe-blob por `pdf.js` lazy-load para PDFs > 1MB (evita travamento do Safari por memória); PDFs pequenos continuam em iframe.
+- [ ] **Limite de tamanho no VFS para upload:** upload com arquivo > 10MB → erro amigável antes de gravar (hoje o limite de 1MB vale para escrita; uploads de imagem/PDF podem passar por data URL).
+- [ ] **Rate limit dinâmico no proxy:** `gitCorsProxy` com cota por `uid` — owner (via `users/{uid}.role`) com 200 req/min, demais 50 req/min (hoje fixo 50).
+- [ ] **Auditoria final de segurança:** conferir CSP (sem `eval`), DOMPurify em todos os renderers, e ARIA labels — checklist S18.
+
+**Critérios de Aceite:** PDF grande não trava o Safari; upload >10MB bloqueado com mensagem; owner não esbarra no rate limit; auditoria S18 sem falhas.
+
+---
+
 ## Dependências entre Sprints
 
 ```text
@@ -551,6 +651,7 @@ S6 ──► S7 ──► S8 ─────────────────
 - **S9 depende de S3, S4, S5, S7 e S8** (workflow unificado).
 - **S10/S11 só fazem sentido com S9 completo** (não se otimiza/hardeneia o que não existe).
 - **S13–S19 (Homologação) seguem a ordem cronológica** de S0→S12, testando os workflows da jornada (J1–J7) — ver `docs/diagrams/journey.md`.
+- **S20–S26 (Fase 6 — Correções da Auditoria)** seguem a ordem cronológica da jornada (J1→J7) e podem rodar em paralelo às pendências de device real da Fase 5. Dependências: S20 (auth) e S21 (APIs) são pré-requisitos de S22 (geração real); S24 depende de S22/S23 (deploy usa geração+diff); S25 depende de S24 (deploy/offline); S26 é independente (segurança/viewer).
 
 ---
 

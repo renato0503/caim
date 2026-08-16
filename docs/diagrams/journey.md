@@ -183,3 +183,6 @@ flowchart TD
 | J6 | Uso da IDE                  | explorer/editor/viewer/git          | S16    | 🧪 `file-tree` + `viewer` + `git-service` |
 | J7 | Offline & PWA               | modo avião, bundle, atualização     | S17    | bundle 156KB gzip + SW precache verificados |
 | -  | Segurança & Go Live         | App Check, Lighthouse, iPhones      | S18–S19 | 🧪 viewer XSS + path traversal + CSP/headers ao vivo · ⏳ device real |
+| -  | Correções (auditoria)       | auth, APIs, geração, diff, deploy, offline, segurança | S20–S26 | ⏳ planejado (Fase 6) — ver `implementation.md` |
+
+> **Fase 6 (S20–S26):** correções da auditoria cruzada `journey.md` × `workflows.md` executada em 16/08/2026 — gaps de produção em auth (senha/email/token), APIs (validação/failover UX), geração (contexto 16KB/continue-truncation), diff (create/delete/rename), deploy (polling Pages/export ZIP/push pendente), offline (storage pressure) e segurança (pdf.js/rate limit dinâmico). Detalhes em `implementation.md`.
