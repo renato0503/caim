@@ -18,8 +18,13 @@ vi.mock('../security/security-service.js', () => ({
   },
 }));
 
+vi.mock('../auth/auth-service.js', () => ({
+  authService: { logout: vi.fn() },
+}));
+
 import { dbService } from '../db/db-service.js';
 import { security } from '../security/security-service.js';
+import { authService } from '../auth/auth-service.js';
 
 const screens = () => {
   const ids = ['screen-auth', 'screen-dashboard', 'screen-settings', 'screen-ide'];
@@ -105,5 +110,20 @@ describe('AuthViews — Settings (3 APIs cifradas)', () => {
     await views.saveSettings();
     const saved = dbService.updateLlmKeys.mock.calls[0][1];
     expect(saved[0].active).toBe(false);
+  });
+
+  it('botão "Sair" na tela Settings chama authService.logout', () => {
+    const logoutBtn = document.createElement('button');
+    logoutBtn.id = 'settings-logout';
+    const backBtn = document.createElement('button');
+    backBtn.id = 'settings-back';
+    const saveBtn = document.createElement('button');
+    saveBtn.id = 'settings-save';
+    document.body.append(logoutBtn, backBtn, saveBtn);
+
+    const views = makeViews();
+    views.bindSettings();
+    logoutBtn.click();
+    expect(authService.logout).toHaveBeenCalled();
   });
 });

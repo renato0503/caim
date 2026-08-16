@@ -250,6 +250,9 @@ export class AuthViews {
     document.getElementById('settings-save').addEventListener('click', () => {
       this.saveSettings().then(() => this.show('dashboard')).catch((err) => this.toast(`Erro: ${err.message}`, true));
     });
+    document.getElementById('settings-logout').addEventListener('click', async () => {
+      await authService.logout();
+    });
   }
 }
 

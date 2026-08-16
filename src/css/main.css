@@ -1442,6 +1442,16 @@ button,
   background: var(--accent-press);
 }
 
+.dash-btn.dash-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.dash-btn.dash-danger:active {
+  background: rgba(239, 68, 68, 0.28);
+}
+
 .settings-shell {
   justify-content: flex-start;
   padding-top: 32px;
