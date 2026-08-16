@@ -253,6 +253,7 @@ const diffViewer = new DiffViewer({
     const f = editor.getDiffCandidates().find((c) => c.path === path);
     if (!f) return;
     await editor.applyContent(path, applyBlockAccept(f.oldContent, f.newContent, idx), { saved: true });
+    notify.particles.emit(window.innerWidth / 2, window.innerHeight / 2, 'success');
     refreshDiff();
   },
   onRejectBlock: async (path, idx) => {
@@ -280,10 +281,32 @@ const gitPanel = new GitPanel({
   notify,
   onDeploy: () => deployProject(),
   onResetWorkspace: resetWorkspace,
+  onExportZip: () => exportProjectAsZip(),
   onDeployed: (url) => {
     notify.toast(`MVP publicado! O GitHub está construindo. ${url}`, { position: 'center' });
   },
 });
+
+// S24: aviso de "push pendente" ao voltar online (commits locais sem remote)
+async function checkPendingPush() {
+  try {
+    const remote = await gitService.getRemote();
+    const log = await gitService.log(1);
+    gitPanel.setPendingPush(!remote && log.length > 0);
+  } catch (err) {
+    gitPanel.setPendingPush(false);
+  }
+}
+window.addEventListener('online', () => {
+  checkPendingPush();
+  notify.toast('Conexão restabelecida.', { position: 'center' });
+});
+gitPanel.refresh = gitPanel.refresh.bind(gitPanel);
+const origRefresh = gitPanel.refresh.bind(gitPanel);
+gitPanel.refresh = async () => {
+  await origRefresh();
+  await checkPendingPush();
+};
 
 // Foco no editor recolhe o bottom sheet (editor sempre em primeiro plano)
 document.getElementById('editor-container').addEventListener('focusin', () => {
@@ -373,6 +396,11 @@ $uploadBtn.addEventListener('click', () => {
   input.addEventListener('change', async () => {
     const files = [...(input.files || [])];
     for (const file of files) {
+      // S26: limite de upload de 10MB (evita travar o Safari com arquivos gigantes)
+      if (file.size > 10 * 1024 * 1024) {
+        notify.toast(`"${file.name}" tem mais de 10MB — upload bloqueado.`, { position: 'center' });
+        continue;
+      }
       try {
         const content = await readFileContent(file);
         const name = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -562,11 +590,78 @@ $chatStop.addEventListener('click', () => {
 // Deploy to Pages (MVP Factory — via Cloud Function)
 // ============================================================
 
+// S24: aguarda o GitHub Pages responder 200 (HEAD a cada 5s, até 5min).
+async function waitForPagesLive(url, timeout = 300000) {
+  const start = Date.now();
+  for (;;) {
+    try {
+      const res = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+      if (res.type === 'opaque' || res.ok) return true;
+    } catch (err) {
+      // ainda construindo → continua
+    }
+    if (Date.now() - start >= timeout) return false;
+    await new Promise((r) => setTimeout(r, 5000));
+  }
+}
+
+function setDeploying(busy) {
+  const btn = document.getElementById('deploy-btn');
+  if (!btn) return;
+  btn.classList.toggle('deploying', busy);
+  btn.disabled = busy;
+  const label = btn.querySelector('span');
+  if (label) label.textContent = busy ? 'Publicando…' : 'Deploy';
+  // S30: barra de progresso (XP) durante o deploy
+  const bar = document.getElementById('deploy-xp');
+  const fill = document.getElementById('deploy-xp-fill');
+  if (bar && fill) {
+    bar.hidden = !busy;
+    if (busy) {
+      fill.style.transition = 'none';
+      fill.style.width = '5%';
+      requestAnimationFrame(() => {
+        fill.style.transition = 'width 4s ease-out';
+        fill.style.width = '90%';
+      });
+    } else {
+      fill.style.width = '100%';
+      setTimeout(() => { fill.style.width = '0%'; }, 300);
+    }
+  }
+}
+
+// S24: exporta o projeto como ZIP (JSZip) — VFS sem .git
+async function exportProjectAsZip() {
+  const JSZip = (await import('jszip')).default;
+  const zip = new JSZip();
+  const allFiles = await vfs.listAllFiles();
+  let count = 0;
+  for (const p of allFiles) {
+    if (p.startsWith('.git/')) continue;
+    const { content } = await vfs.readFile(p);
+    zip.file(p, content);
+    count += 1;
+  }
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `mvp-${slugify(new Date().toISOString().slice(0, 10))}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  return count;
+}
+
 async function deployProject() {
   if (!authViews?.user || authViews.devMode) {
     notify.toast('Faça login para publicar seu MVP', { position: 'center' });
     throw new Error('Login necessário');
   }
+  if (document.getElementById('deploy-btn')?.disabled) return; // evita duplo clique
+  setDeploying(true);
   try {
     const token = await authService.getIdToken();
     if (!token) throw new Error('Sessão expirada — entre novamente');
@@ -587,14 +682,26 @@ async function deployProject() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Falha no deploy');
     await dbService.addProject(authViews.user.uid, { name: projectName, url: json.url, fileCount: files.length });
+    // S24: espera o Pages ficar online antes do toast de sucesso
+    notify.toast('O GitHub está construindo seu MVP… (até 5min)', { position: 'center' });
+    const live = await waitForPagesLive(json.url);
+    if (!live) {
+      notify.toast(`Deploy enviado, mas o Pages ainda está construindo. ${json.url}`, { position: 'center' });
+      return json.url;
+    }
     notify.toast(`MVP publicado! ${json.url}`, {
       button: { text: 'Abrir', onClick: () => window.open(json.url, '_blank') },
       position: 'center',
     });
+    // S29: conquista + partículas de deploy
+    notify.achievement({ title: 'DEPLOY DESBLOQUEADO!', message: json.url });
+    notify.particles.emit(window.innerWidth / 2, window.innerHeight / 3, 'deploy');
     return json.url;
   } catch (err) {
     notify.toast(`Deploy falhou: ${err.message}`, { position: 'center' });
     throw err;
+  } finally {
+    setDeploying(false);
   }
 }
 
@@ -679,7 +786,72 @@ async function bootstrap() {
   await authViews.init();
 }
 
-bootstrap().catch((err) => console.error('[CAIM] bootstrap failed', err));
+// ============================================================
+// S25: PWA & Offline — storage pressure, persist(), badge offline
+// ============================================================
+
+// S30: efeito CRT opcional (duplo toque no logo da IDE ativa/desativa)
+(function setupCrtToggle() {
+  const logo = document.querySelector('.ide-logo');
+  if (!logo) return;
+  let lastTap = 0;
+  logo.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTap < 350) {
+      document.body.classList.toggle('crt-effect');
+      notify.toast(document.body.classList.contains('crt-effect') ? 'Modo CRT ativado' : 'Modo CRT desativado', { position: 'center' });
+    }
+    lastTap = now;
+  });
+  logo.addEventListener('dblclick', () => {
+    document.body.classList.toggle('crt-effect');
+    notify.toast(document.body.classList.contains('crt-effect') ? 'Modo CRT ativado' : 'Modo CRT desativado', { position: 'center' });
+  });
+})();
+
+const offlineBadge = document.getElementById('offline-badge');
+function updateOfflineBadge() {
+  const offline = !navigator.onLine;
+  offlineBadge?.classList.toggle('hidden', !offline);
+}
+window.addEventListener('online', updateOfflineBadge);
+window.addEventListener('offline', updateOfflineBadge);
+
+// pede persistência do storage (reduz risco de eviction no iOS Safari)
+async function requestStoragePersist() {
+  try {
+    if (navigator.storage?.persist) {
+      const granted = await navigator.storage.persist();
+      if (!granted) {
+        // apenas informativo — não bloqueia
+        console.info('[CAIM] storage não-persistente; commits frequentes recomendados.');
+      }
+    }
+  } catch (err) {
+    // API indisponível — degrada silencioso
+  }
+}
+
+// aviso quando o dispositivo está perto do limite de storage
+async function checkStoragePressure() {
+  try {
+    if (!navigator.storage?.estimate) return;
+    const { quota = 0, usage = 0 } = await navigator.storage.estimate();
+    if (quota > 0 && usage / quota > 0.9) {
+      notify.toast('Seu dispositivo está sem espaço — faça commit e push para não perder código.', { position: 'center' });
+    }
+  } catch (err) {
+    // degrada silencioso
+  }
+}
+
+bootstrap()
+  .then(() => {
+    requestStoragePersist();
+    checkStoragePressure();
+    updateOfflineBadge();
+  })
+  .catch((err) => console.error('[CAIM] bootstrap failed', err));
 
 // ============================================================
 // PWA update (vite-plugin-pwa)

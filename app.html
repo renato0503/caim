@@ -9,11 +9,12 @@
   <meta name="apple-mobile-web-app-title" content="CAIM">
   <meta name="description" content="Mobile-first AI coding agent interface">
   <link rel="icon" type="image/x-icon" href="/assets/icons/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/logo_caim.svg">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/icon-16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/icon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png">
-  <link rel="mask-icon" href="/assets/icons/logo_caim.png" color="#2dd4bf">
+  <link rel="mask-icon" href="/assets/icons/logo_caim.svg" color="#2dd4bf">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -121,10 +122,14 @@
         <button class="ide-icon-btn" id="ide-back-btn" data-nav-back aria-label="Voltar ao dashboard" title="Voltar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
+        <span id="offline-badge" class="offline-badge hidden" title="Modo offline">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.7 11.06A10 10 0 0 1 19 12.55M5 12.55a10 10 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+        </span>
         <button class="ide-deploy-btn" id="deploy-btn" aria-label="Publicar MVP">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 11 13"></polyline><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
           <span>Deploy</span>
         </button>
+        <div class="xp-bar" id="deploy-xp" hidden><div class="xp-bar-fill" id="deploy-xp-fill"></div></div>
         <button class="ide-icon-btn" id="newfile-btn" aria-label="Novo arquivo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>

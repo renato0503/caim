@@ -118,4 +118,88 @@ export const notify = {
     overlay.appendChild(sheet);
     return { close: () => overlay.remove() };
   },
+
+  // S29: toast de conquista 16-bit (borda dourada + bounce)
+  achievement({ title, message, duration = 4000 } = {}) {
+    const el = document.createElement('div');
+    el.className = 'ui-achievement';
+    el.innerHTML = `
+      <div class="ui-achievement-title">🏆 ${esc(title || 'CONQUISTA DESBLOQUEADA!')}</div>
+      <div class="ui-achievement-msg">${esc(message || '')}</div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    let timer = setTimeout(hide, duration);
+    function hide() {
+      clearTimeout(timer);
+      el.classList.remove('show');
+      setTimeout(() => el.remove(), 400);
+    }
+    el.addEventListener('click', hide);
+    return { close: hide };
+  },
+
+  // S29: partículas pixeladas (canvas overlay) — confetti/success/error/deploy
+  particles: (() => {
+    let canvas = null;
+    let ctx = null;
+    let particles = [];
+    let running = false;
+    const COLORS = {
+      confetti: ['#fde047', '#ec4899', '#2dd4bf', '#c084fc'],
+      success: ['#4ade80', '#2dd4bf'],
+      error: ['#f87171', '#fb923c'],
+      deploy: ['#fde047', '#fb923c', '#f87171'],
+    };
+    function ensureCanvas() {
+      if (canvas) return;
+      canvas = document.createElement('canvas');
+      canvas.className = 'ui-particles';
+      document.body.appendChild(canvas);
+      ctx = canvas.getContext('2d');
+      const resize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      resize();
+      window.addEventListener('resize', resize);
+    }
+    function tick() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles = particles.filter((p) => p.life > 0);
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.life -= 1;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.size, p.size);
+      }
+      if (particles.length) requestAnimationFrame(tick);
+      else running = false;
+    }
+    return {
+      emit(x, y, type = 'confetti') {
+        ensureCanvas();
+        if (!ctx) return;
+        const palette = COLORS[type] || COLORS.confetti;
+        const count = type === 'confetti' ? 20 : 8;
+        for (let i = 0; i < count; i += 1) {
+          particles.push({
+            x: x ?? window.innerWidth / 2,
+            y: y ?? window.innerHeight / 2,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 1) * 8,
+            color: palette[Math.floor(Math.random() * palette.length)],
+            life: 60,
+            size: 4 + Math.floor(Math.random() * 4),
+            gravity: 0.3,
+          });
+        }
+        if (!running) {
+          running = true;
+          requestAnimationFrame(tick);
+        }
+      },
+    };
+  })(),
 };

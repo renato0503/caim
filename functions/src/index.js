@@ -127,15 +127,16 @@ const ALLOWED_GIT_HOSTS = [
   'https://codeload.github.com',
 ];
 
-// Rate limit best-effort por instância (50 req/min por chave).
+// Rate limit best-effort por instância (50 req/min padrão; owners 200 req/min).
 const RATE_LIMIT_MAX = 50;
+const RATE_LIMIT_OWNER_MAX = 200;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const rateHits = new Map();
 
-function isRateLimited(key) {
+function isRateLimited(key, max = RATE_LIMIT_MAX) {
   const now = Date.now();
   const hits = (rateHits.get(key) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  if (hits.length >= RATE_LIMIT_MAX) {
+  if (hits.length >= max) {
     rateHits.set(key, hits);
     return true;
   }
@@ -164,21 +165,26 @@ exports.gitCorsProxy = onRequest({ cors: true, maxInstances: 10 }, async (req, r
     return;
   }
 
-  // 2) Rate limit: por usuário autenticado (se Bearer) senão por IP
+  // 2) Rate limit: por usuário autenticado (se Bearer) senão por IP.
+  //    Owners (role no Firestore) têm cota maior (200 req/min).
   const authHeader = req.headers.authorization || '';
   let rateKey;
+  let rateMax = RATE_LIMIT_MAX;
   if (authHeader.startsWith('Bearer ')) {
     try {
       const { uid } = await verifyAuth(req);
       rateKey = `uid:${uid}`;
+      const db = getAdmin().firestore();
+      const snap = await db.doc(`users/${uid}`).get();
+      if (snap.exists && snap.data().role === 'owner') rateMax = RATE_LIMIT_OWNER_MAX;
     } catch (err) {
       rateKey = `ip:${req.headers['x-forwarded-for'] || req.ip || 'unknown'}`;
     }
   } else {
     rateKey = `ip:${req.headers['x-forwarded-for'] || req.ip || 'unknown'}`;
   }
-  if (isRateLimited(rateKey)) {
-    res.status(429).send('Rate limit excedido (50 req/min). Tente novamente em instantes.');
+  if (isRateLimited(rateKey, rateMax)) {
+    res.status(429).send(`Rate limit excedido (${rateMax} req/min). Tente novamente em instantes.`);
     return;
   }
 

@@ -88,6 +88,10 @@ export class FileViewer {
   }
 
   renderPdf(dataUrl) {
+    // S26: PDFs > 1MB usam pdf.js (canvas) em vez de iframe-blob —
+    // evita travamento do Safari por limite de memória do iframe.
+    const approxBytes = dataUrl.length * 0.75;
+    if (approxBytes > 1024 * 1024) return this.renderPdfJs(dataUrl);
     const blob = dataUrlToBlob(dataUrl);
     const url = URL.createObjectURL(blob);
     this.objectUrls.push(url);
@@ -102,6 +106,36 @@ export class FileViewer {
     fallback.rel = 'noopener';
     fallback.textContent = 'Se não carregar, abrir PDF em nova aba';
     this.container.appendChild(fallback);
+  }
+
+  async renderPdfJs(dataUrl) {
+    const pdfjs = await import('pdfjs-dist');
+    if (pdfjs.GlobalWorkerOptions) {
+      pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+    }
+    const blob = dataUrlToBlob(dataUrl);
+    const data = new Uint8Array(await blob.arrayBuffer());
+    const pdf = await pdfjs.getDocument({ data }).promise;
+    const canvas = document.createElement('canvas');
+    canvas.className = 'viewer-pdf-canvas';
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1.5 });
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvas.style.width = '100%';
+    canvas.style.height = 'auto';
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    this.container.appendChild(canvas);
+    const note = document.createElement('p');
+    note.className = 'viewer-fallback';
+    note.textContent = `PDF grande renderizado (página 1 de ${pdf.numPages}). ${pdf.numPages > 1 ? 'Outras páginas não são exibidas no preview.' : ''}`;
+    this.container.appendChild(note);
+    const download = document.createElement('a');
+    download.className = 'viewer-fallback';
+    download.href = dataUrl;
+    download.download = basename(this.currentPath || 'arquivo.pdf');
+    download.textContent = 'Baixar PDF';
+    this.container.appendChild(download);
   }
 
   renderCsv(content) {

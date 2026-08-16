@@ -16,12 +16,13 @@ const STATUS_LABEL = {
 };
 
 export class GitPanel {
-  constructor({ container, notify, onDeployed, onDeploy, onResetWorkspace }) {
+  constructor({ container, notify, onDeployed, onDeploy, onResetWorkspace, onExportZip }) {
     this.container = container;
     this.notify = notify;
     this.onDeployed = onDeployed;
     this.onDeploy = onDeploy;
     this.onResetWorkspace = onResetWorkspace;
+    this.onExportZip = onExportZip;
     this.busy = false;
     this.render();
   }
@@ -64,8 +65,10 @@ export class GitPanel {
         <div class="gp-section gp-row">
           <button class="gp-btn gp-primary" data-act="commit">Commit</button>
           <button class="gp-btn" data-act="log">Log</button>
+          <button class="gp-btn" data-act="export">Exportar ZIP</button>
           <button class="gp-btn gp-danger" data-act="reset">Novo projeto</button>
         </div>
+        <div class="gp-pending hidden" data-ref="pendingPush"></div>
         <div class="gp-log" data-ref="log"></div>
       </div>
     `;
@@ -77,6 +80,7 @@ export class GitPanel {
       steps: this.container.querySelector('[data-ref="steps"]'),
       files: this.container.querySelector('[data-ref="files"]'),
       log: this.container.querySelector('[data-ref="log"]'),
+      pendingPush: this.container.querySelector('[data-ref="pendingPush"]'),
     };
 
     this.container.querySelectorAll('[data-act]').forEach((btn) => {
@@ -110,6 +114,9 @@ export class GitPanel {
         await this.showLog();
       } else if (action === 'deploy') {
         await this.deploy();
+      } else if (action === 'export') {
+        const count = await this.onExportZip?.();
+        if (count) this.toast(`ZIP gerado com ${count} arquivos`);
       } else if (action === 'reset') {
         await this.onResetWorkspace?.();
       }
@@ -183,6 +190,15 @@ export class GitPanel {
     const hasPat = await security.hasSecret('github_pat');
     this.el.patState.textContent = hasPat ? 'PAT salvo (cifrado)' : 'Sem PAT';
     this.el.patState.classList.toggle('ok', hasPat);
+  }
+
+  // S24: exibe badge "push pendente" quando há commits locais sem remote
+  setPendingPush(hasPending) {
+    if (!this.el.pendingPush) return;
+    this.el.pendingPush.classList.toggle('hidden', !hasPending);
+    if (hasPending) {
+      this.el.pendingPush.textContent = '⚠ Push pendente — seus commits locais ainda não foram enviados.';
+    }
   }
 
   renderFiles(status) {

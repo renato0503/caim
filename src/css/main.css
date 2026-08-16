@@ -48,8 +48,7 @@
 
   /* ── Tipografia ──────────────────────────────────────── */
   --font-display: "Press Start 2P", "Silkscreen", monospace;
-  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-             "Inter", "Segoe UI", sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text",             "Inter", "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono",
                Menlo, Consolas, monospace;
 
@@ -73,7 +72,75 @@
   --f7-message-received-text-color:   var(--text-primary);
   --f7-message-user-bubble-color:     var(--accent);
   --f7-message-user-text-color:       var(--text-on-accent);
+
+  /* ── Extensões 16-bit (S27 — layout.md §2.1) ─────────── */
+  --pixel-success: #4ade80;
+  --pixel-warning: #fbbf24;
+  --pixel-danger:  #f87171;
+  --pixel-info:    #60a5fa;
+  --pixel-purple:  #c084fc;
+  --pixel-gold:    #fde047;
+  --pixel-border:  #475569;
+  --pixel-shadow:  #020617;
+  --pixel-grid:    rgba(45, 212, 191, 0.05);
+
+  /* Fontes pixel (S27 — layout.md §3.1) */
+  --font-code:  "JetBrains Mono", "Fira Code", "Courier New", monospace;
+  --font-body:  "VT323", "Silkscreen", "Courier New", monospace;
+  --font-pixel: "Silkscreen", "Dogica", "Press Start 2P", monospace;
 }
+
+/* ============================================================
+   S27 — Retrofit 16-bit: utilitários pixel (layout.md §4.1, §11)
+   ============================================================ */
+
+.pixel-border {
+  --border-size: 2px;
+  --border-color: var(--pixel-border);
+  --shadow-color: var(--pixel-shadow);
+  box-shadow:
+    inset calc(var(--border-size) * -1) calc(var(--border-size) * -1) 0 0 rgba(255, 255, 255, 0.1),
+    inset var(--border-size) var(--border-size) 0 0 var(--border-color),
+    0 4px 0 0 var(--shadow-color);
+  image-rendering: pixelated;
+}
+
+.pixel-btn {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  padding: 8px 16px;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
+  transition: transform 0.05s;
+  image-rendering: pixelated;
+  box-shadow:
+    inset -2px -2px 0 rgba(0, 0, 0, 0.4),
+    inset 2px 2px 0 rgba(255, 255, 255, 0.2),
+    0 4px 0 var(--pixel-shadow);
+}
+.pixel-btn:active {
+  transform: translateY(4px);
+  box-shadow:
+    inset 2px 2px 0 rgba(0, 0, 0, 0.4),
+    inset -2px -2px 0 rgba(255, 255, 255, 0.2);
+}
+.pixel-btn-primary { background: var(--accent); color: var(--text-on-accent); }
+.pixel-btn-danger  { background: var(--pixel-danger); color: var(--text-primary); }
+.pixel-btn-success { background: var(--pixel-success); color: var(--bg-primary); }
+.pixel-btn-ghost   { background: transparent; color: var(--text-primary); border: 2px solid var(--pixel-border); box-shadow: none; }
+.pixel-btn-ghost:hover { background: var(--bg-tertiary); }
+
+.pixel-icon {
+  width: 24px;
+  height: 24px;
+  shape-rendering: crispEdges;
+  image-rendering: pixelated;
+}
+.pixel-icon-sm { width: 16px; height: 16px; }
+.pixel-icon-lg { width: 32px; height: 32px; }
 
 /* Tema claro (auth / dashboard / settings) */
 .theme-light {
@@ -205,6 +272,63 @@ button,
   background: var(--brand-navy-soft);
 }
 
+/* S25: badge de modo offline no header */
+.offline-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--warning);
+}
+
+/* S30: barra de progresso XP no header (deploy) */
+.xp-bar {
+  width: 72px;
+  height: 10px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--pixel-border);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+.xp-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--pixel-gold));
+  transition: width 0.5s ease-out;
+  position: relative;
+}
+.xp-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+  animation: xp-shine 1.2s infinite;
+}
+@keyframes xp-shine {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+/* S30: efeito CRT (scanlines + vignette) — toggle no logo da IDE */
+body.crt-effect::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+  z-index: 9997;
+}
+body.crt-effect::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+  z-index: 9996;
+}
+
 .ide-header-actions {
   display: flex;
   align-items: center;
@@ -275,6 +399,19 @@ button,
   background: var(--accent-press);
 }
 
+/* S24: estado "Publicando…" no botão Deploy */
+.ide-deploy-btn.deploying {
+  opacity: 0.85;
+  cursor: wait;
+}
+.ide-deploy-btn.deploying svg {
+  animation: deploy-spin 1s linear infinite;
+}
+@keyframes deploy-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ============================================================
    Workspace: activity bar + main (editor)
    ============================================================ */
@@ -294,7 +431,7 @@ button,
   gap: 4px;
   padding: 8px 0;
   background: var(--bg-surface);
-  border-right: 1px solid var(--border-subtle);
+  border-right: 2px solid var(--pixel-border);
 }
 
 .ab-item {
@@ -303,27 +440,45 @@ button,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--bg-tertiary);
   border: none;
-  border-radius: 8px;
   color: var(--text-secondary);
   cursor: pointer;
   padding: 0;
   position: relative;
+  image-rendering: pixelated;
+  box-shadow:
+    inset -2px -2px 0 rgba(0, 0, 0, 0.5),
+    inset 2px 2px 0 rgba(255, 255, 255, 0.1);
+  transition: transform 0.1s;
 }
 
 .ab-item svg {
   width: 22px;
   height: 22px;
+  shape-rendering: crispEdges;
+}
+
+.ab-item:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
 }
 
 .ab-item:active {
-  background: var(--bg-tertiary);
+  transform: translateY(2px);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 .ab-item.ab-active {
   color: var(--accent);
-  background: var(--brand-navy-soft);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  animation: pulse-pixel 1.5s infinite;
+}
+
+@keyframes pulse-pixel {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
 }
 
 .ab-item.ab-active::before {
@@ -821,12 +976,13 @@ button,
   display: flex;
   align-items: center;
   gap: 6px;
-  background: transparent;
-  border: 1px solid transparent;
+  background: var(--bg-secondary);
+  border: none;
+  border-right: 2px solid var(--pixel-border);
   border-bottom: none;
-  border-radius: 8px 8px 0 0;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
   padding: 7px 10px;
   cursor: pointer;
   white-space: nowrap;
@@ -836,9 +992,8 @@ button,
 
 .editor-tab.active {
   background: var(--bg-primary);
-  color: var(--text-primary);
-  border-color: var(--f7-bars-border-color);
-  border-bottom-color: var(--bg-primary);
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
 }
 
 .editor-tab-name {
@@ -847,8 +1002,8 @@ button,
 }
 
 .editor-tab.dirty .editor-tab-name::after {
-  content: ' •';
-  color: var(--accent);
+  content: ' ●';
+  color: var(--pixel-warning);
 }
 
 .editor-tab-close {
@@ -874,20 +1029,42 @@ button,
   height: 100%;
   font-size: 13px;
   background: var(--bg-primary);
+  font-family: var(--font-code);
+}
+
+.editor-container .cm-editor .cm-gutters {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-right: 2px solid var(--pixel-border);
+  font-family: var(--font-pixel);
+  font-size: 10px;
 }
 
 .editor-container .cm-editor .cm-content {
   caret-color: var(--accent);
 }
 
+.editor-container .cm-editor .cm-activeLine {
+  background: rgba(45, 212, 191, 0.1);
+}
+
 .editor-container .cm-editor .cm-selectionBackground,
 .editor-container .cm-editor.cm-focused .cm-selectionBackground {
-  background: rgba(45, 212, 191, 0.25) !important;
+  background: rgba(45, 212, 191, 0.3) !important;
 }
 
 .editor-container .cm-editor.cm-focused {
   outline: none;
 }
+
+/* Syntax highlighting 16-bit (S28 — layout.md §4.4) */
+.editor-container .cm-editor .tok-keyword { color: #c084fc; }
+.editor-container .cm-editor .tok-string { color: #4ade80; }
+.editor-container .cm-editor .tok-number { color: #fbbf24; }
+.editor-container .cm-editor .tok-comment { color: #94a3b8; font-style: italic; }
+.editor-container .cm-editor .tok-function { color: #60a5fa; }
+.editor-container .cm-editor .tok-variableName { color: #f1f5f9; }
+.editor-container .cm-editor .tok-typeName { color: #fb923c; }
 
 .editor-statusbar {
   flex-shrink: 0;
@@ -946,7 +1123,7 @@ button,
   display: flex;
   flex-direction: column;
   background: var(--bg-elevated);
-  border-top: 1px solid var(--border-subtle);
+  border-top: 4px solid var(--accent);
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
   transition: height 0.25s ease;
@@ -979,7 +1156,8 @@ button,
   height: 32px;
   padding: 0 8px;
   gap: 2px;
-  border-bottom: 1px solid var(--f7-bars-border-color);
+  border-bottom: 2px solid var(--pixel-border);
+  background: var(--bg-tertiary);
 }
 
 .bs-tab {
@@ -988,9 +1166,11 @@ button,
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 6px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  text-transform: uppercase;
+  border-radius: 0;
+  border-bottom: 3px solid transparent;
   cursor: pointer;
 }
 
@@ -1000,7 +1180,8 @@ button,
 
 .bs-tab.bs-active {
   color: var(--accent);
-  background: var(--accent-glow);
+  border-bottom-color: var(--accent);
+  background: var(--bg-secondary);
 }
 
 .bs-panes {
@@ -1110,14 +1291,24 @@ button,
   border: none;
   border-radius: 8px;
   color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 13px;  font-weight: 600;
   padding: 8px 12px;
   cursor: pointer;
 }
 
 .gp-btn:active {
   opacity: 0.8;
+}
+
+/* S24: aviso de push pendente */
+.gp-pending {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  color: var(--warning);
+  font-size: 12px;
+  background: rgba(245, 158, 11, 0.1);
 }
 
 .gp-btn.gp-primary {
@@ -1766,6 +1957,50 @@ button,
   flex-shrink: 0;
 }
 
+/* S29: toast de conquista 16-bit */
+.ui-achievement {
+  position: fixed;
+  top: calc(80px + env(safe-area-inset-top));
+  right: 16px;
+  z-index: 260;
+  background: var(--bg-elevated);
+  border: 3px solid var(--pixel-gold);
+  padding: 12px 16px;
+  max-width: 300px;
+  opacity: 0;
+  transform: translateX(400px) rotate(5deg);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+  box-shadow:
+    inset -2px -2px 0 rgba(0, 0, 0, 0.3),
+    inset 2px 2px 0 rgba(255, 255, 255, 0.1),
+    0 8px 0 var(--pixel-shadow);
+  cursor: pointer;
+}
+.ui-achievement.show {
+  opacity: 1;
+  transform: translateX(0) rotate(0);
+}
+.ui-achievement-title {
+  font-family: var(--font-display);
+  font-size: 10px;
+  color: var(--pixel-gold);
+  margin-bottom: 4px;
+}
+.ui-achievement-msg {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* S29: canvas de partículas */
+.ui-particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  image-rendering: pixelated;
+}
+
 .ui-actions {
   position: absolute;
   left: 0;
@@ -1998,7 +2233,7 @@ button,
   width: 78vw;
   max-width: 320px;
   background: var(--bg-elevated);
-  border-right: 1px solid var(--border-subtle);
+  border-right: 4px solid var(--accent);
   transform: translateX(-100%);
   transition: transform 0.25s ease;
   display: flex;
