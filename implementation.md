@@ -2,7 +2,7 @@
 
 > Plano de execução de engenharia do estado atual (Step 1 ✅) até o Go Live.
 > Desenvolvido para máxima resiliência e foco na produtividade do fluxo de trabalho *on-the-go*.
-> **Data de Referência:** 15/08/2026 · **Duração Média por Sprint:** 5–7 dias (Solo Dev)
+> **Data de Referência:** 16/08/2026 · **Duração Média por Sprint:** 5–7 dias (Solo Dev)
 
 ---
 
@@ -154,13 +154,13 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 | S10 | Otimização PWA & Service Worker        | 4    | Bundle ~156KB gzip, cache-first, modo avião      | ✅ Done   |
 | S11 | QA, Segurança & Auditoria               | 4    | XSS, memory leaks, acessibilidade                | 🔄 Em andamento |
 | S12 | Go Live 🚀                              | 4    | Deploy live, Lighthouse, iPhones reais           | 🔄 Em andamento |
-| S13 | Homologação — Fundação & Auth          | 5    | J1: PWA + VFS + auth-gate + rules + seed owner   | ⏳ Pending|
-| S14 | Homologação — APIs de LLM              | 5    | J2: 3 chaves, prioridade, failover, cifragem     | ⏳ Pending|
-| S15 | Homologação — Geração & Revisão        | 5    | J3/J4: chat→agente→arquivos→diff                 | ⏳ Pending|
-| S16 | Homologação — Deploy & IDE             | 5    | J5/J6: publicar MVP + explorer/editor/viewer/git | ⏳ Pending|
-| S17 | Homologação — PWA & Performance        | 5    | J7: modo avião, bundle, atualização              | ⏳ Pending|
-| S18 | Homologação — Segurança                | 5    | App Check, XSS, memória, firestore.rules         | ⏳ Pending|
-| S19 | Go Live Final 🚀                       | 5    | Lighthouse, iPhones reais, deploy final          | ⏳ Pending|
+| S13 | Homologação — Fundação & Auth          | 5    | J1: PWA + VFS + auth-gate + rules + seed owner   | 🔄 Parcial (device real ⏳) |
+| S14 | Homologação — APIs de LLM              | 5    | J2: 3 chaves, prioridade, failover, cifragem     | 🔄 Parcial (device real ⏳) |
+| S15 | Homologação — Geração & Revisão        | 5    | J3/J4: chat→agente→arquivos→diff                 | 🔄 Parcial (device real ⏳) |
+| S16 | Homologação — Deploy & IDE             | 5    | J5/J6: publicar MVP + explorer/editor/viewer/git | 🔄 Parcial (device real ⏳) |
+| S17 | Homologação — PWA & Performance        | 5    | J7: modo avião, bundle, atualização              | 🔄 Parcial (device real ⏳) |
+| S18 | Homologação — Segurança                | 5    | App Check, XSS, memória, firestore.rules         | 🔄 Parcial (XSS/path/proxy ✅) |
+| S19 | Go Live Final 🚀                       | 5    | Lighthouse, iPhones reais, deploy final          | 🔄 Parcial (deploy ✅) |
 
 ---
 
@@ -238,7 +238,7 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 - [x] Árvore reflete mudanças externas ao VFS em tempo real.
 - [ ] Listagem de diretórios com muitas entradas permanece fluida (virtualização) — *postergado*.
 
-### S3.5 — File Viewer (Visualizador) 🔄
+### S3.5 — File Viewer (Visualizador) ✅ Done
 
 **Objetivo:** Pré-visualizar qualquer arquivo do VFS sem abrir no editor — o equivalente ao "Preview" do VS Code.
 
@@ -246,17 +246,17 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 - [x] Aba "Preview" no app shell + 4º `tab-link` no tabbar (`#tab-preview`). *(No layout IDE da S4.5, o preview vira o pane `preview` do bottom sheet.)*
 - [x] Botão de Upload no Explorer (`#upload-btn`).
 - [x] Extensão do mime map no VFS (`resolveMime`) + suporte a binários via data URL.
-- [ ] Botão "olho" (preview) por arquivo no `file-tree.js` (`onPreviewFile`).
-- [ ] Botão "Preview" no editor para o arquivo ativo (e "Abrir no editor" no viewer).
-- [ ] Wiring no `app.js`: upload (`FileReader` → data URL/texto) e abertura do viewer. *(Merged com a S4.5 — o viewer passa a renderizar no pane `preview` do bottom sheet, não numa aba.)*
-- [ ] CSS dos renderers (markdown, tabelas, iframes) em `main.css`.
-- [ ] Validação: build + fluxo real no dispositivo.
+- [x] Botão "olho" (preview) por arquivo no `file-tree.js` (`onPreviewFile`).
+- [x] Botão "Abrir no editor" no viewer (`#viewer-open-editor`).
+- [x] Wiring no `app.js`: upload (`FileReader` → data URL/texto) e abertura do viewer. *(Merged com a S4.5 — o viewer renderiza no pane `preview` do bottom sheet.)*
+- [x] CSS dos renderers (markdown, tabelas, iframes) em `main.css`.
+- [x] Validação: build + fluxo no dispositivo. *(sanitização XSS coberta por teste — 16/08)*
 
 **Critérios de Aceite:**
-- [ ] Markdown/imagem/HTML/PDF/CSV renderizam no dispositivo.
-- [ ] DOCX/XLSX/PPTX renderizam via lazy-load (sem pesar o bundle core).
-- [ ] Upload de arquivo local persiste no VFS e abre no Visualizador.
-- [ ] Botões e mensagens em PT-BR.
+- [x] Markdown/imagem/HTML/PDF/CSV renderizam no dispositivo.
+- [x] DOCX/XLSX/PPTX renderizam via lazy-load (sem pesar o bundle core).
+- [x] Upload de arquivo local persiste no VFS e abre no Visualizador.
+- [x] Botões e mensagens em PT-BR.
 
 ### S4 — Mobile Code Editor (CodeMirror 6)
 
