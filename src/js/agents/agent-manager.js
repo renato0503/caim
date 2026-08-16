@@ -144,6 +144,25 @@ class AgentManager {
     );
   }
 
+  /**
+   * S21/S26: mensagem amigável por status HTTP do provedor (não mostra código cru).
+   */
+  providerError(provider, status) {
+    if (status === 402 || status === 429) {
+      return `${provider}: saldo insuficiente ou limite atingido (${status}). Verifique a conta/cobrança na plataforma da chave.`;
+    }
+    if (status === 401 || status === 403) {
+      return `${provider}: chave inválida ou sem permissão (${status}). Confira a chave em Configurações.`;
+    }
+    if (status === 404) {
+      return `${provider}: modelo ou endpoint não encontrado (404). Confira o model/baseUrl.`;
+    }
+    if (status >= 500) {
+      return `${provider}: erro do provedor (${status}). Tente novamente em instantes.`;
+    }
+    return `${provider}: erro HTTP ${status}`;
+  }
+
   async liveSend(text, entry, cfg, { onChunk, onThinking, signal }) {
     const apiKey = await security.decrypt(entry.key);
     const baseUrl = (entry.baseUrl || cfg.url).replace(/\/+$/, '');
@@ -171,9 +190,9 @@ class AgentManager {
       if (!res.ok) {
         if (res.status === 429 || res.status >= 500) {
           await sleep(1200); // S8: backoff antes do failover
-          throw new Error(`${entry.provider} ${res.status}`);
+          throw new Error(this.providerError(entry.provider, res.status));
         }
-        throw new Error(`${entry.provider} HTTP ${res.status}`);
+        throw new Error(this.providerError(entry.provider, res.status));
       }
       const { full, thinking } = await streamReader(res, { onChunk, onThinking });
       const message = this.driver.extractMessage(full);

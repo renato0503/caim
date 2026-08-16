@@ -77,6 +77,16 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
+        // Os ícones do manifest são adicionados automaticamente pelo plugin
+        // (com revision hash). Excluí-los do glob evita o conflito
+        // add-to-cache-list-conflicting-entries (duplicação do mesmo arquivo).
+        globIgnores: [
+          'assets/icons/icon-192.png',
+          'assets/icons/icon-512.png',
+          'assets/icons/maskable-192.png',
+          'assets/icons/maskable-512.png',
+          'assets/icons/logo_caim.svg',
+        ],
         navigateFallback: '/app.html',
         navigateFallbackAllowlist: [/^\/app/],
         cleanupOutdatedCaches: true,

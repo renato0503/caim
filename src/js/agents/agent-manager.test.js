@@ -152,6 +152,18 @@ describe('AgentManager — failover e chaves (S8/S14)', () => {
     expect(res.error).toContain('401');
   });
 
+  it('providerError é amigável para saldo insuficiente (402)', async () => {
+    const err = agentManager.providerError('deepseek', 402);
+    expect(err).toContain('saldo insuficiente');
+    expect(err).not.toMatch(/^deepseek 402$/);
+  });
+
+  it('providerError amigável para chave inválida e erro do provedor', async () => {
+    expect(agentManager.providerError('qwen', 401)).toContain('chave inválida');
+    expect(agentManager.providerError('openai', 500)).toContain('erro do provedor');
+    expect(agentManager.providerError('deepseek', 404)).toContain('modelo');
+  });
+
   it('ordena por prioridade e ignora baseUrl quando provider conhecido', async () => {
     dbService.getUserProfile.mockResolvedValue({
       llm_keys: [
