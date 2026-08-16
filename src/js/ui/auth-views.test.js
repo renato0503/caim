@@ -126,4 +126,16 @@ describe('AuthViews — Settings (3 APIs cifradas)', () => {
     logoutBtn.click();
     expect(authService.logout).toHaveBeenCalled();
   });
+
+  it('goBack volta para a tela anterior (settings aberto a partir da IDE)', () => {
+    const views = makeViews();
+    views.show('dashboard');
+    views.show('ide');
+    views.show('settings');
+    expect(views.currentScreen).toBe('settings');
+    views.goBack();
+    expect(views.currentScreen).toBe('ide');
+    views.goBack();
+    expect(views.currentScreen).toBe('dashboard');
+  });
 });

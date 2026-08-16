@@ -120,6 +120,9 @@ $menuBtn.addEventListener('click', openDrawer);
 $closeDrawerBtn.addEventListener('click', closeDrawer);
 backdrop.addEventListener('click', closeDrawer);
 
+// Voltar ao dashboard a partir da IDE (navStack do AuthViews)
+document.getElementById('ide-back-btn').addEventListener('click', () => authViews?.goBack());
+
 // Drag do bottom sheet (touch nativo)
 let dragY = 0;
 let dragStartH = SHEET_COLLAPSED;

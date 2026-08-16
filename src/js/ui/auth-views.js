@@ -11,6 +11,8 @@ export class AuthViews {
     this.user = null;
     this.devMode = false;
     this.signupMode = false;
+    this.navStack = [];
+    this.currentScreen = null;
     this.screens = {
       auth: document.getElementById('screen-auth'),
       dashboard: document.getElementById('screen-dashboard'),
@@ -26,6 +28,29 @@ export class AuthViews {
   show(name) {
     for (const s of Object.values(this.screens)) s.classList.remove('active');
     this.screens[name].classList.add('active');
+    // Rastreia a tela anterior para o botão "Voltar" retornar corretamente
+    // (ex.: Configurações abertas a partir da IDE volta para a IDE, não pro dashboard).
+    if (name !== this.currentScreen && this.currentScreen) {
+      this.navStack.push(this.currentScreen);
+      if (this.navStack.length > 5) this.navStack.shift();
+    }
+    this.currentScreen = name;
+    this.updateBackVisibility();
+  }
+
+  updateBackVisibility() {
+    const canGoBack = this.navStack.length > 0;
+    document.querySelectorAll('[data-nav-back]').forEach((btn) => {
+      btn.classList.toggle('hidden', !canGoBack);
+    });
+  }
+
+  goBack() {
+    const prev = this.navStack.pop() || 'dashboard';
+    this.currentScreen = prev;
+    for (const s of Object.values(this.screens)) s.classList.remove('active');
+    this.screens[prev].classList.add('active');
+    this.updateBackVisibility();
   }
 
   async init() {
@@ -47,6 +72,8 @@ export class AuthViews {
 
     authService.onAuthStateChanged((user) => {
       this.user = user;
+      this.navStack = [];
+      this.currentScreen = null;
       if (user) {
         this.show('dashboard');
         this.renderDashboard();
@@ -246,9 +273,9 @@ export class AuthViews {
   }
 
   async bindSettings() {
-    document.getElementById('settings-back').addEventListener('click', () => this.show('dashboard'));
+    document.getElementById('settings-back').addEventListener('click', () => this.goBack());
     document.getElementById('settings-save').addEventListener('click', () => {
-      this.saveSettings().then(() => this.show('dashboard')).catch((err) => this.toast(`Erro: ${err.message}`, true));
+      this.saveSettings().then(() => this.goBack()).catch((err) => this.toast(`Erro: ${err.message}`, true));
     });
     document.getElementById('settings-logout').addEventListener('click', async () => {
       await authService.logout();
