@@ -262,7 +262,7 @@ export class BaseAgent {
 * **Name:** CAIM (Cerra Ai Mobile)
 * **Primary Brand Color:** `#0f172a` (Dark Slate)
 * **Accent Color:** `#2dd4bf` (Teal/Cyan for syntax highlighting and active states)
-* **Logo Assets:** Root directory `assets/icons/logo_caim.png` serving as the base for all PWA maskable icons (192x192, 512x512).
+* **Logo Assets:** Root directory `assets/icons/logo_caim.svg` serving as the base for all PWA maskable icons (192x192, 512x512) — gerados por `scripts/generate-icons.mjs`.
 
 ---
 

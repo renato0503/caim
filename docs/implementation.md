@@ -112,7 +112,7 @@
 
 - **Rebuild do app shell em Framework7 9.1.2 (Vanilla JS):** abas Chat/Editor/Files + tabbar inferior com SVGs inline. Substituiu a UI custom manual.
 - **Scaffolding Vite 8** (`vite.config.js`, `package.json`, `scripts/copy-assets.mjs`, `INICIAR.bat`) com `vite-plugin-pwa`. Dev server em `http://localhost:5173/`.
-- **Identidade visual:** logo `logo_caim.png` aplicado em favicon, icons PWA, apple-touch-icon, splash screens e header.
+- **Identidade visual:** logo `logo_caim.svg` (16-bit) aplicado em favicon, icons PWA, apple-touch-icon, splash screens e header.
 - **Dark theme:** `--bg-primary: #000000`, accent `#2dd4bf`, `theme-color` preto, `dark: true`.
 - **S1 VFS ✅:** `core/vfs-service.js` (Dexie, CRUD, seed, proteção de path, `vfs:changed`, mime map, data URLs) + `core/event-emitter.js`.
 - **S3 parcial:** `ui/file-tree.js` (árvore recursiva, colapso, re-render reativo) + botão "Novo arquivo".

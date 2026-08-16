@@ -58,7 +58,7 @@
 
 ## Assets (`assets/`)
 
-- `assets/icons/` — `logo_caim.png` (base 1024²), `icon-16/32/192/512.png`, `apple-touch-icon.png` (180), `maskable-192/512.png`, `favicon.ico`.
+- `assets/icons/` — `logo_caim.svg` (base 16-bit), `icon-16/32/192/512.png`, `apple-touch-icon.png` (180), `maskable-192/512.png`, `favicon.ico` (todos gerados por `scripts/generate-icons.mjs`).
 - `assets/splash/` — 10 splash screens iOS (geradas a partir do logo).
 - `assets/` é copiado para `public/assets/` pelo `scripts/copy-assets.mjs` em `predev`/`prebuild`.
 
