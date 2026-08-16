@@ -102,6 +102,9 @@
 
 html,
 body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
   overscroll-behavior: contain;
   user-select: none;
   -webkit-user-select: none;
