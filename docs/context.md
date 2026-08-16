@@ -25,7 +25,7 @@
 | **Diff (S5)**       | ✅ Concluído                    | Diffs por bloco no bottom sheet (aceitar/rejeitar). |
 | **Agentes (S6/S7/S8)** | ✅ Concluído                | Drivers (JSON/XML) + Tool Executor + failover multi-API + streaming/thinking/abort + contexto. |
 | **SaaS (auth-gate)** | ✅ Em produção                | Login/cadastro obrigatórios, dashboard de MVPs, Settings 3 APIs cifradas, deploy via CF `githubDeployProxy` (PAT do Owner no Secret Manager). |
-| **Deploy**          | ✅ Live                        | **https://caim.web.app** · Functions `githubDeployProxy` + `gitCorsProxy`. |
+| **Deploy**          | ✅ Live                        | **https://caim.web.app** (landing) · **https://caim.web.app/app** (IDE) · Functions `githubDeployProxy` + `gitCorsProxy`. |
 | **Firebase config** | ✅ Real                        | `projectId: cerraimobile` · Blaze · Auth + Firestore (usuário `gestor.renatorosa@gmail.com`). |
 | **Performance (S10)** | ✅ Core ~156KB gzip        | Framework7 removido (mini-UI `notify.js`), CodeMirror minimal, code-splitting nativo. CSS 5,6KB. Lazy: xlsx/mammoth/isomorphic-git/firebase. |
 | **Testes (Vitest)** | ✅ 79 verdes (16/08)      | `fake-indexeddb` + `vitest.config.js` + `jsdom`. Cobre: VFS (CRUD/path/persistência/eventos), EventEmitter, SecurityService (AES-GCM), Drivers (JSON/XML + truncamento), Tool Executor (path traversal), **Git offline**, **Failover multi-API (401/429/prioridade)**, **Settings 3 APIs cifradas**, **streaming/thinking/abort/contexto**, **Diff blocks (aceitar/rejeitar/minified)**, **Explorer (file-tree)**, **Viewer XSS (markdown/csv/html/xlsx/docx)**. |

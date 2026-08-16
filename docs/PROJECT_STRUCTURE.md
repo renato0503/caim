@@ -12,7 +12,8 @@
 
 ## Root Level
 
-- `index.html` — App shell: `screen-auth` (default, sem flash de IDE) + `screen-dashboard` + `screen-settings` + `screen-ide` (layout IDE: activity bar + workspace + bottom sheet + explorer drawer).
+- `index.html` — **Landing page** pública (16-bit, honesta) — raiz `https://caim.web.app/`.
+- `app.html` — **App (SPA)**: `screen-auth` (default) + `screen-dashboard` + `screen-settings` + `screen-ide` (layout IDE) — `https://caim.web.app/app`.
 - `vite.config.js` — Vite 8 + `vite-plugin-pwa` (manifest, icons, splash; `manualChunks` como função por causa do rolldown).
 - `package.json` — Scripts: `predev`/`prebuild` (copiam assets), `dev`, `build`, `preview`, `test` (Vitest).
 - `INICIAR.bat` — Sobe o dev server e abre o navegador.

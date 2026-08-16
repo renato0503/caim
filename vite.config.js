@@ -14,6 +14,11 @@ export default defineConfig({
     target: 'es2017',
     sourcemap: false,
     rollupOptions: {
+      // S21: multi-page — index.html = landing pública, app.html = IDE (SPA).
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        app: resolve(__dirname, 'app.html'),
+      },
       output: {
         // S10: só o Framework7 vira chunk fixo. O resto usa code-splitting
         // nativo (dinâmico) — langs, marked, xlsx, firebase, isomorphic-git
@@ -27,6 +32,7 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'prompt',
+      includeAssets: ['assets/icons/favicon.ico'],
       manifest: {
         name: 'CAIM',
         short_name: 'CAIM',
@@ -35,7 +41,8 @@ export default defineConfig({
         background_color: '#000000',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        start_url: '/app',
+        scope: '/',
         icons: [
           {
             src: '/assets/icons/icon-192.png',
@@ -64,8 +71,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-        navigateFallback: '/index.html',
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
+        navigateFallback: '/app.html',
+        navigateFallbackAllowlist: [/^\/app/],
         cleanupOutdatedCaches: true,
         // S10: fonte pixel (Press Start 2P) cacheada para o modo avião
         runtimeCaching: [

@@ -29,6 +29,15 @@
 
 ## Registro de Progresso (2026-08-15)
 
+### Sessão de 16/08 — Landing page no ar + MPA (landing / + app /app)
+
+- **Landing page implementada em `caim.web.app`** (raiz) — proposta "CAIM Landing Page 16-bit (Proposta Honesta)" aprovada e executada: 11 seções (Hero, Problema, Solução, Como funciona, Features, Stack, Para quem é, Para quem NÃO é, FAQ honesto, CTA, Footer com badge de transparência).
+- **MPA no Vite:** `index.html` = landing pública · `app.html` = IDE (SPA antigo). `rollupOptions.input` com os dois entradas. PWA `start_url: /app`, `scope: /`, `navigateFallback: /app.html` com allowlist `/^\/app/`.
+- **Firebase rewrites:** `/app` e `/app/**` → `app.html`; `**` → `index.html` (landing). Verificado ao vivo: `/` = landing (HTTP 200), `/app` = IDE (HTTP 200).
+- **Assets:** `src/css/landing.css` + `src/js/landing.js` (menu mobile, typewriter no terminal, reveal no scroll, partículas no hero, easter eggs CRT + Konami).
+- **Copy 100% honesta** conforme a proposta (zero afirmações não verificáveis): bundle real 156KB gzip, chaves próprias, offline-first, stack auditável.
+- **Testes: 81 verdes** · build limpo (54 entradas precache).
+
 ### Sessão de 16/08 — Docs reorganizados + Fase 7 (S27–S30) Retrofit 16-bit
 
 - **Docs movidos para `docs/`:** `implementation.md`, `context.md` e `PROJECT_STRUCTURE.md` saíram da raiz para `docs/` (organização); caminhos relativos corrigidos em todos os `.md` (referências `docs/diagrams/...` → `diagrams/...` e `implementation.md` → `../implementation.md` nos diagramas).
