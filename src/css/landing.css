@@ -76,6 +76,12 @@ h1, h2, h3, h4 { font-family: 'Press Start 2P', monospace; font-weight: 400; }
   font-family: 'Press Start 2P', monospace;
   font-size: 14px;
   color: var(--lp-accent);
+  text-shadow:
+    2px 0 0 var(--lp-accent-dark),
+    -2px 0 0 var(--lp-accent-dark),
+    0 2px 0 var(--lp-accent-dark),
+    0 -2px 0 var(--lp-accent-dark),
+    4px 4px 0 var(--lp-shadow);
 }
 .lp-logo img { image-rendering: pixelated; }
 
@@ -463,6 +469,12 @@ h1, h2, h3, h4 { font-family: 'Press Start 2P', monospace; font-weight: 400; }
 .lp-badge-title { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--lp-gold); margin-bottom: 8px; }
 .lp-badge-transparency pre { text-align: left; color: var(--lp-text2); font-size: 14px; line-height: 1.6; margin: 0 0 12px; }
 .lp-copy { text-align: center; color: var(--lp-text2); font-size: 14px; margin: 24px 0 0; }
+.lp-credit {
+  color: var(--lp-accent);
+  border-bottom: 2px solid var(--lp-border);
+  transition: color 0.2s, border-color 0.2s;
+}
+.lp-credit:hover { color: var(--lp-gold); border-color: var(--lp-gold); }
 
 /* ---------- CRT effect ---------- */
 body.landing.crt::after {

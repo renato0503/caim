@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
   <title>CAIM — Code no bolso. De verdade.</title>
   <meta name="description" content="Uma PWA que roda 100% no Safari iOS. CodeMirror 6, Git nativo, preview de 7 formatos. Use suas próprias chaves de LLM. Open source.">
@@ -26,7 +26,6 @@
   <header class="lp-header" id="lp-header">
     <div class="lp-header-inner">
       <a class="lp-logo" href="#hero">
-        <img src="/assets/icons/icon-32.png" alt="CAIM" width="28" height="28">
         <span>CAIM</span>
       </a>
       <nav class="lp-nav" id="lp-nav">
@@ -50,7 +49,10 @@
       <div class="lp-hero-inner">
         <div class="lp-badges">
           <span class="lp-badge lp-badge-online"><i class="dot"></i> Online · ~156KB gzip</span>
-          <span class="lp-badge lp-badge-beta">🔧 Em beta</span>
+          <span class="lp-badge lp-badge-beta">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M14 6l2 4h4l-3 4 1 5-5-3-5 3 1-5-3-4h4z"/></svg>
+            Em beta
+          </span>
         </div>
         <h1 class="lp-h1">Code no bolso.<br><span class="lp-accent">De verdade.</span></h1>
         <p class="lp-hero-sub">
@@ -58,8 +60,14 @@
           Sem instalar app. Sem backend próprio. Com suas próprias chaves de IA.
         </p>
         <div class="lp-hero-cta">
-          <a class="lp-btn lp-btn-primary" href="/app">🚀 Testar no iPhone</a>
-          <a class="lp-btn lp-btn-ghost" href="https://github.com/renato0503/caim" target="_blank" rel="noopener">📖 Ver no GitHub</a>
+          <a class="lp-btn lp-btn-primary" href="/app">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M12 2l3 6-3 4-3-4 3-6z"/><path d="M8 11l-2 7h12l-2-7"/><path d="M10 18v2h4v-2"/></svg>
+            Testar no iPhone
+          </a>
+          <a class="lp-btn lp-btn-ghost" href="https://github.com/renato0503/caim" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13l2 2 4-4"/></svg>
+            Ver no GitHub
+          </a>
         </div>
 
         <!-- Mockup iPhone -->
@@ -70,11 +78,11 @@
               <div class="lp-terminal" id="lp-terminal">
                 <div class="lp-term-bar"><span class="lp-term-dot r"></span><span class="lp-term-dot y"></span><span class="lp-term-dot g"></span> caim — IDE</div>
                 <pre class="lp-term-body"><span class="lp-cmd">$ caim</span>
-<span class="lp-out">CAIM v0.1 · pronta para codar</span>
+<span class="lp-out">CAIM v0.1 · pronta p/ codar</span>
 <span class="lp-cmd">$ você: <span id="lp-type" class="lp-type"></span><span class="lp-cursor">▋</span></span>
-<span class="lp-out lp-dim">» criando landing page para padaria…</span>
-<span class="lp-out lp-dim">» 3 arquivos criados ✓</span>
-<span class="lp-out lp-dim">» deploy → https://owner.github.io/mvp ✓</span></pre>
+<span class="lp-out lp-dim">» criando landing de padaria…</span>
+<span class="lp-out lp-dim">» 3 arquivos criados</span>
+<span class="lp-out lp-dim">» deploy → github.io/mvp</span></pre>
               </div>
             </div>
           </div>
@@ -89,10 +97,30 @@
         <h2 class="lp-h2">Codar no celular sempre foi<br><span class="lp-accent">uma promessa quebrada.</span></h2>
         <p class="lp-sub">Apps nativos pesados. IDEs em nuvem que exigem login. Editores de texto disfarçados. Você já tentou todos.</p>
         <div class="lp-grid lp-grid-4 lp-pain-cards">
-          <article class="lp-card lp-reveal"><div class="lp-card-icon">📱!</div><h3>Apps pesados</h3><p>50MB+ de download, cadastro obrigatório, login toda hora.</p></article>
-          <article class="lp-card lp-reveal"><div class="lp-card-icon">☁️✂️</div><h3>Dependência de nuvem</h3><p>Sem sinal = sem código. Teu projeto some offline.</p></article>
-          <article class="lp-card lp-reveal"><div class="lp-card-icon">✏️💔</div><h3>Editores limitados</h3><p>Syntax highlighting é luxo. Diff é mito. Git é piada.</p></article>
-          <article class="lp-card lp-reveal"><div class="lp-card-icon">🔓</div><h3>Chaves vazadas</h3><p>Código passa por servidor deles. Tua chave LLM também.</p></article>
+          <article class="lp-card lp-reveal">
+            <div class="lp-card-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M10 6h4"/><path d="M11 18h2"/></svg>
+            </div>
+            <h3>Apps pesados</h3><p>50MB+ de download, cadastro obrigatório, login toda hora.</p>
+          </article>
+          <article class="lp-card lp-reveal">
+            <div class="lp-card-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M6 16h12a4 4 0 0 0 0-8 5 5 0 0 0-9-2 4 4 0 0 0-3 6z"/><path d="M3 20h18"/></svg>
+            </div>
+            <h3>Dependência de nuvem</h3><p>Sem sinal = sem código. Teu projeto some offline.</p>
+          </article>
+          <article class="lp-card lp-reveal">
+            <div class="lp-card-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M17 3l4 4L8 20H4v-4z"/><path d="M14 6l4 4"/><path d="M2 22l4-2"/></svg>
+            </div>
+            <h3>Editores limitados</h3><p>Syntax highlighting é luxo. Diff é mito. Git é piada.</p>
+          </article>
+          <article class="lp-card lp-reveal">
+            <div class="lp-card-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><rect x="5" y="10" width="14" height="11" rx="1"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/></svg>
+            </div>
+            <h3>Chaves vazadas</h3><p>Código passa por servidor deles. Tua chave LLM também.</p>
+          </article>
         </div>
       </div>
     </section>
@@ -104,17 +132,23 @@
         <p class="lp-sub">O CAIM é uma Progressive Web App. Você adiciona à tela inicial do iPhone. Abre rápido. Funciona offline. Fecha o browser. Abre de novo. Tudo ainda lá.</p>
         <div class="lp-grid lp-grid-3">
           <article class="lp-card lp-reveal">
-            <div class="lp-card-icon">🎮</div>
+            <div class="lp-card-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 11h.01M11 11h.01M7 14h.01M11 14h.01"/><path d="M16 11v2"/></svg>
+            </div>
             <h3>É um app. Mas não é um app.</h3>
             <p>PWA instalável no iOS. Zero App Store. Zero aprovação. Abra o Safari, adicione à tela inicial, pronto. O ícone fica na home como qualquer app nativo.</p>
           </article>
           <article class="lp-card lp-reveal">
-            <div class="lp-card-icon">🔐</div>
+            <div class="lp-card-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><rect x="5" y="10" width="14" height="11" rx="1"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/><path d="M12 13v3"/></svg>
+            </div>
             <h3>Suas chaves. Suas regras.</h3>
             <p>DeepSeek, Qwen, OpenAI — você conecta <strong>suas próprias chaves</strong>. Elas ficam cifradas no seu dispositivo (AES-GCM via Web Crypto). Nunca passam por servidor nosso.</p>
           </article>
           <article class="lp-card lp-reveal">
-            <div class="lp-card-icon">📶</div>
+            <div class="lp-card-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M2 12a10 10 0 0 1 20 0"/><path d="M5 12a7 7 0 0 1 14 0"/><path d="M8.5 12a3.5 3.5 0 0 1 7 0"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+            </div>
             <h3>Funciona no avião.</h3>
             <p>Service Worker + IndexedDB. Uma vez carregado, o CAIM funciona sem internet. Editar, commitar, revisar diffs — tudo local. Só precisa de rede para a LLM ou o push.</p>
           </article>
@@ -141,41 +175,42 @@
         <h2 class="lp-h2">O que você realmente recebe.</h2>
         <p class="lp-sub">Nada de "IA mágica" ou promessas vagas. Aqui está o que está no código hoje:</p>
         <div class="lp-grid lp-grid-3">
-          <article class="lp-card lp-feature lp-reveal"><span class="lp-check">✅</span><h3>Editor CodeMirror 6</h3><p>Syntax highlighting para JS, Python, HTML, CSS, JSON, MD. Lazy-load de linguagens.</p></article>
-          <article class="lp-card lp-feature lp-reveal"><span class="lp-check">✅</span><h3>Toolbar flutuante iOS</h3><p>Barra de atalhos (<code>{}</code>, <code>()</code>, <code>[]</code>, TAB) sobre o teclado virtual.</p></article>
-          <article class="lp-card lp-feature lp-reveal"><span class="lp-check">✅</span><h3>Diff visual por blocos</h3><p>Veja o que o agente quer mudar. Aceite ou rejeite cada bloco individualmente.</p></article>
-          <article class="lp-card lp-feature lp-reveal"><span class="lp-check">✅</span><h3>Git nativo no browser</h3><p><code>init</code>, <code>add</code>, <code>commit</code>, <code>log</code> — 100% offline via isomorphic-git.</p></article>
-          <article class="lp-card lp-feature lp-reveal"><span class="lp-check">✅</span><h3>Preview de 7 formatos</h3><p>Markdown, imagem, HTML, PDF, CSV, DOCX, XLSX. Binários via data URL.</p></article>
-          <article class="lp-card lp-feature lp-reveal"><span class="lp-check">✅</span><h3>Failover de APIs</h3><p>Até 3 chaves LLM com prioridade. Se uma falhar, tenta a próxima (com backoff).</p></article>
-          <article class="lp-card lp-feature lp-reveal"><span class="lp-check">✅</span><h3>PWA instalável</h3><p>Service Worker + manifest. Abre em standalone, sem barra de URL do Safari.</p></article>
-          <article class="lp-card lp-feature lp-reveal"><span class="lp-check">✅</span><h3>Criptografia local</h3><p>Suas chaves de API ficam em AES-GCM no IndexedDB. Nunca em texto puro.</p></article>
-          <article class="lp-card lp-feature lp-reveal"><span class="lp-check">✅</span><h3>Dashboard de projetos</h3><p>Histórico dos seus MVPs publicados, com URL do GitHub Pages.</p></article>
+          <article class="lp-card lp-feature lp-reveal"><span class="lp-check"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg></span><h3>Editor CodeMirror 6</h3><p>Syntax highlighting para JS, Python, HTML, CSS, JSON, MD. Lazy-load de linguagens.</p></article>
+          <article class="lp-card lp-feature lp-reveal"><span class="lp-check"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg></span><h3>Toolbar flutuante iOS</h3><p>Barra de atalhos (<code>{}</code>, <code>()</code>, <code>[]</code>, TAB) sobre o teclado virtual.</p></article>
+          <article class="lp-card lp-feature lp-reveal"><span class="lp-check"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg></span><h3>Diff visual por blocos</h3><p>Veja o que o agente quer mudar. Aceite ou rejeite cada bloco individualmente.</p></article>
+          <article class="lp-card lp-feature lp-reveal"><span class="lp-check"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg></span><h3>Git nativo no browser</h3><p><code>init</code>, <code>add</code>, <code>commit</code>, <code>log</code> — 100% offline via isomorphic-git.</p></article>
+          <article class="lp-card lp-feature lp-reveal"><span class="lp-check"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg></span><h3>Preview de 7 formatos</h3><p>Markdown, imagem, HTML, PDF, CSV, DOCX, XLSX. Binários via data URL.</p></article>
+          <article class="lp-card lp-feature lp-reveal"><span class="lp-check"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg></span><h3>Failover de APIs</h3><p>Até 3 chaves LLM com prioridade. Se uma falhar, tenta a próxima (com backoff).</p></article>
+          <article class="lp-card lp-feature lp-reveal"><span class="lp-check"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg></span><h3>PWA instalável</h3><p>Service Worker + manifest. Abre em standalone, sem barra de URL do Safari.</p></article>
+          <article class="lp-card lp-feature lp-reveal"><span class="lp-check"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg></span><h3>Criptografia local</h3><p>Suas chaves de API ficam em AES-GCM no IndexedDB. Nunca em texto puro.</p></article>
+          <article class="lp-card lp-feature lp-reveal"><span class="lp-check"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg></span><h3>Dashboard de projetos</h3><p>Histórico dos seus MVPs publicados, com URL do GitHub Pages.</p></article>
         </div>
         <p class="lp-fineprint">* Todas as features acima estão implementadas e testadas em Safari iOS. Veja o código-fonte completo no GitHub.</p>
       </div>
     </section>
 
-    <!-- ============ 6. STACK ============ -->
+    <!-- ============ 6. STACK (resumido) ============ -->
     <section class="lp-section" id="stack">
       <div class="lp-container">
-        <h2 class="lp-h2">Construído com ferramentas que você já conhece.</h2>
-        <p class="lp-sub">Sem framework proprietário. Sem vendor lock-in. Código aberto. Stack auditável.</p>
-        <div class="lp-grid lp-grid-4 lp-stack-grid">
-          <article class="lp-card lp-reveal"><h3>Vite 8</h3><p>Build tool + HMR</p><span class="lp-stack-size">Dev only</span></article>
-          <article class="lp-card lp-reveal"><h3>CodeMirror 6</h3><p>Editor de código</p><span class="lp-stack-size">~45KB gzip</span></article>
-          <article class="lp-card lp-reveal"><h3>Dexie.js</h3><p>Wrapper para IndexedDB</p><span class="lp-stack-size">~15KB gzip</span></article>
-          <article class="lp-card lp-reveal"><h3>isomorphic-git</h3><p>Git no browser (lazy)</p><span class="lp-stack-size">~80KB lazy</span></article>
-          <article class="lp-card lp-reveal"><h3>Firebase Auth</h3><p>Autenticação</p><span class="lp-stack-size">~30KB gzip</span></article>
-          <article class="lp-card lp-reveal"><h3>Firestore</h3><p>Dashboard de projetos</p><span class="lp-stack-size">~25KB gzip</span></article>
-          <article class="lp-card lp-reveal"><h3>DOMPurify</h3><p>Sanitização anti-XSS</p><span class="lp-stack-size">~8KB lazy</span></article>
-          <article class="lp-card lp-reveal"><h3>Cloud Functions</h3><p>Proxy CORS p/ GitHub</p><span class="lp-stack-size">Serverless</span></article>
-        </div>
-        <div class="lp-bundle lp-reveal">
-          <h3>📦 Bundle real (build de produção)</h3>
-          <pre>Core eager:   ~156 KB gzip
-CSS:          ~5.6 KB gzip
-Lazy chunks:  xlsx, mammoth, isomorphic-git, marked, DOMPurify
-Total 1st load: &lt; 400 KB gzip</pre>
+        <h2 class="lp-h2">Stack transparente.</h2>
+        <p class="lp-sub">Sem framework proprietário. Código aberto e auditável.</p>
+        <div class="lp-stack-wrap lp-reveal">
+          <ul class="lp-stack-list">
+            <li><b>Vite 8</b> <span>build + HMR</span></li>
+            <li><b>CodeMirror 6</b> <span>editor (~45KB)</span></li>
+            <li><b>Dexie.js</b> <span>IndexedDB (~15KB)</span></li>
+            <li><b>isomorphic-git</b> <span>git no browser (lazy)</span></li>
+            <li><b>Firebase</b> <span>auth + firestore</span></li>
+            <li><b>DOMPurify</b> <span>anti-XSS (lazy)</span></li>
+            <li><b>Cloud Functions</b> <span>proxy CORS GitHub</span></li>
+          </ul>
+          <div class="lp-bundle">
+            <h3>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4"/><path d="M12 12v8"/></svg>
+              Bundle real (build)
+            </h3>
+            <p>Core ~156KB gzip · CSS ~5.6KB · 1ª carga &lt; 400KB · lazy: xlsx/mammoth/git/marked</p>
+          </div>
         </div>
       </div>
     </section>
@@ -185,10 +220,22 @@ Total 1st load: &lt; 400 KB gzip</pre>
       <div class="lp-container">
         <h2 class="lp-h2">O CAIM é feito para você se...</h2>
         <div class="lp-grid lp-grid-4">
-          <article class="lp-card lp-persona lp-reveal"><div class="lp-card-icon">👨‍💻</div><h3>O dev on-the-go</h3><p>Programa no PC, mas quer resolver pequenos bugs, revisar PRs ou prototipar ideias no ônibus, na fila ou no sofá.</p></article>
-          <article class="lp-card lp-persona lp-reveal"><div class="lp-card-icon">🚀</div><h3>O indie hacker</h3><p>Tem ideias de MVPs toda semana e quer validar rápido — sem ligar o PC, sem subir servidor, sem configurar ambiente.</p></article>
-          <article class="lp-card lp-persona lp-reveal"><div class="lp-card-icon">🎓</div><h3>O estudante</h3><p>Está aprendendo a programar e quer praticar em qualquer lugar, sem depender de laboratório ou notebook.</p></article>
-          <article class="lp-card lp-persona lp-reveal"><div class="lp-card-icon">🔧</div><h3>O técnico de campo</h3><p>Precisa editar configs, revisar scripts ou checar logs em produção enquanto está em cliente — no 4G.</p></article>
+          <article class="lp-card lp-persona lp-reveal">
+            <div class="lp-card-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg></div>
+            <h3>O dev on-the-go</h3><p>Programa no PC, mas quer resolver pequenos bugs, revisar PRs ou prototipar ideias no ônibus, na fila ou no sofá.</p>
+          </article>
+          <article class="lp-card lp-persona lp-reveal">
+            <div class="lp-card-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M12 3l2 5h5l-4 4 1 6-4-3-4 3 1-6-4-4h5z"/></svg></div>
+            <h3>O indie hacker</h3><p>Tem ideias de MVPs toda semana e quer validar rápido — sem ligar o PC, sem subir servidor, sem configurar ambiente.</p>
+          </article>
+          <article class="lp-card lp-persona lp-reveal">
+            <div class="lp-card-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M12 4l9 4-9 4-9-4z"/><path d="M4 11v4c0 2 8 3 16 0v-4"/></svg></div>
+            <h3>O estudante</h3><p>Está aprendendo a programar e quer praticar em qualquer lugar, sem depender de laboratório ou notebook.</p>
+          </article>
+          <article class="lp-card lp-persona lp-reveal">
+            <div class="lp-card-icon"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M14 6a4 4 0 0 0-4 4 4 4 0 0 0 4 4"/><path d="M6 3l1 6 3-1"/><path d="M18 21l-1-6-3 1"/></svg></div>
+            <h3>O técnico de campo</h3><p>Precisa editar configs, revisar scripts ou checar logs em produção enquanto está em cliente — no 4G.</p>
+          </article>
         </div>
       </div>
     </section>
@@ -198,11 +245,11 @@ Total 1st load: &lt; 400 KB gzip</pre>
       <div class="lp-container">
         <h2 class="lp-h2">E não é pra você se...</h2>
         <ul class="lp-anti">
-          <li class="lp-reveal"><b>❌ Você trabalha em projetos enterprise monolíticos.</b> CAIM é para MVPs, protótipos e scripts. Times grandes ainda precisam de VS Code + desktop.</li>
-          <li class="lp-reveal"><b>❌ Você precisa de colaboração em tempo real.</b> Não há (ainda) cursor compartilhado nem review em equipe. É uma ferramenta solo.</li>
-          <li class="lp-reveal"><b>❌ Você não tem chaves de API de LLM.</b> O CAIM não fornece LLMs. Você precisa ter (ou criar) conta em DeepSeek, Qwen ou OpenAI. Os custos são pagos direto aos provedores.</li>
-          <li class="lp-reveal"><b>❌ Você usa Android como principal.</b> Otimizamos para iOS Safari. Funciona no Android Chrome, mas a experiência não é validada lá.</li>
-          <li class="lp-reveal"><b>❌ Você quer substituir seu IDE desktop.</b> O CAIM <b>complementa</b> seu setup. É para quando o PC não está perto.</li>
+          <li class="lp-reveal"><b><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M6 6l12 12M18 6L6 18"/></svg> Você trabalha em projetos enterprise monolíticos.</b> CAIM é para MVPs, protótipos e scripts. Times grandes ainda precisam de VS Code + desktop.</li>
+          <li class="lp-reveal"><b><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M6 6l12 12M18 6L6 18"/></svg> Você precisa de colaboração em tempo real.</b> Não há (ainda) cursor compartilhado nem review em equipe. É uma ferramenta solo.</li>
+          <li class="lp-reveal"><b><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M6 6l12 12M18 6L6 18"/></svg> Você não tem chaves de API de LLM.</b> O CAIM não fornece LLMs. Você precisa ter (ou criar) conta em DeepSeek, Qwen ou OpenAI. Os custos são pagos direto aos provedores.</li>
+          <li class="lp-reveal"><b><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M6 6l12 12M18 6L6 18"/></svg> Você usa Android como principal.</b> Otimizamos para iOS Safari. Funciona no Android Chrome, mas a experiência não é validada lá.</li>
+          <li class="lp-reveal"><b><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M6 6l12 12M18 6L6 18"/></svg> Você quer substituir seu IDE desktop.</b> O CAIM <b>complementa</b> seu setup. É para quando o PC não está perto.</li>
         </ul>
       </div>
     </section>
@@ -232,13 +279,19 @@ Total 1st load: &lt; 400 KB gzip</pre>
         <h2 class="lp-h2">Pronto para codar no bolso?</h2>
         <p class="lp-sub">Abra no Safari do seu iPhone. Adicione à tela inicial. Configure suas chaves. Comece em 2 minutos.</p>
         <div class="lp-hero-cta">
-          <a class="lp-btn lp-btn-primary lp-btn-lg" href="/app">🚀 Abrir CAIM</a>
-          <a class="lp-btn lp-btn-ghost" href="https://github.com/renato0503/caim" target="_blank" rel="noopener">📖 Ler documentação</a>
+          <a class="lp-btn lp-btn-primary lp-btn-lg" href="/app">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M12 2l3 6-3 4-3-4 3-6z"/><path d="M8 11l-2 7h12l-2-7"/><path d="M10 18v2h4v-2"/></svg>
+            Abrir CAIM
+          </a>
+          <a class="lp-btn lp-btn-ghost" href="https://github.com/renato0503/caim" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            Ler documentação
+          </a>
         </div>
         <div class="lp-guarantees">
-          <span>✅ Sem cadastro pra testar</span>
-          <span>✅ Sem instalação</span>
-          <span>✅ Sem cartão de crédito</span>
+          <span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg> Sem cadastro pra testar</span>
+          <span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg> Sem instalação</span>
+          <span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" shape-rendering="crispEdges"><path d="M5 12l5 5 9-9"/></svg> Sem cartão de crédito</span>
         </div>
       </div>
     </section>
@@ -251,38 +304,26 @@ Total 1st load: &lt; 400 KB gzip</pre>
       <div class="lp-footer-col">
         <h4>Produto</h4>
         <a href="/app">Abrir CAIM</a>
-        <a href="#features">Roadmap</a>
-        <a href="#features">Changelog</a>
+        <a href="#features">Features</a>
+        <a href="#faq">FAQ</a>
       </div>
       <div class="lp-footer-col">
         <h4>Desenvolvedor</h4>
         <a href="https://github.com/renato0503/caim" target="_blank" rel="noopener">GitHub</a>
-        <a href="/docs">Documentação</a>
         <a href="https://github.com/renato0503/caim/issues" target="_blank" rel="noopener">Issues</a>
-      </div>
-      <div class="lp-footer-col">
-        <h4>Legal</h4>
-        <a href="#hero">Política de Privacidade</a>
-        <a href="#hero">Termos de Uso</a>
-        <a href="#hero">Licença MIT</a>
       </div>
       <div class="lp-footer-col">
         <h4>Contato</h4>
         <a href="mailto:contato@cerra.app">Email</a>
-        <a href="#hero">Discord (em breve)</a>
-        <a href="#hero">Twitter/X</a>
       </div>
     </div>
-    <div class="lp-badge-transparency lp-reveal">
-      <div class="lp-badge-title">🏷️ TRANSPARÊNCIA</div>
-      <pre>📦 Código: github.com/renato0503/caim
-🏗️ Stack: Vite + Vanilla JS
-📅 Última atualização: 16/08/2026
-📊 Bundle: 156KB gzip (core)
-⚖️ Licença: MIT</pre>
-      <button class="lp-btn lp-btn-ghost lp-btn-sm" id="lp-crt">🕹️ Ativar modo CRT</button>
+    <div class="lp-footer-meta">
+      <button class="lp-btn lp-btn-ghost lp-btn-sm" id="lp-crt">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" shape-rendering="crispEdges"><rect x="3" y="3" width="18" height="13"/><path d="M3 16h18v3h-8l-1 2h-2v-2H3z"/></svg>
+        Ativar modo CRT
+      </button>
     </div>
-    <p class="lp-copy">© 2026 CAIM · Feito com código no bolso.</p>
+    <p class="lp-copy">© 2026 CAIM · Desenvolvido por <a href="https://cerradofinancas.com.br" target="_blank" rel="noopener" class="lp-credit">Cerrado Tech</a></p>
   </footer>
 
   <script type="module" src="/src/js/landing.js"></script>
