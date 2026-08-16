@@ -22,7 +22,9 @@
   <title>CAIM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <!-- Fonte pixel (Press Start 2P) carregada de forma assíncrona via app.js
+       para tirá-la do caminho crítico de render (LCP/FCP). -->
+  <link rel="preload" as="image" href="/assets/icons/icon-192.png" fetchpriority="high">
   <link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" href="/assets/splash/splash-640x1136.png">
   <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="/assets/splash/splash-750x1334.png">
   <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" href="/assets/splash/splash-1242x2208.png">
@@ -66,7 +68,7 @@
     <div id="screen-dashboard" class="screen theme-light">
       <div class="dash-shell">
         <div class="dash-head">
-          <img class="auth-logo" src="/assets/icons/icon-192.png" alt="CAIM">
+<img class="auth-logo" src="/assets/icons/icon-192.png" alt="CAIM" fetchpriority="high">
           <h1 id="dashboard-user-name" class="dash-title">Bem-vindo(a)</h1>
         </div>
         <p class="dash-subtitle">Seus MVPs publicados</p>

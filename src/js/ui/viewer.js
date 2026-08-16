@@ -122,18 +122,20 @@ export class FileViewer {
 
   async renderXlsx(dataUrl) {
     const XLSX = await import('xlsx');
+    const DOMPurify = (await import('dompurify')).default;
     const blob = dataUrlToBlob(dataUrl);
     const wb = XLSX.read(await blob.arrayBuffer(), { type: 'array' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const html = XLSX.utils.sheet_to_html(sheet);
-    this.container.innerHTML = `<div class="viewer-table-wrap">${html}</div>`;
+    this.container.innerHTML = `<div class="viewer-table-wrap">${DOMPurify.sanitize(html)}</div>`;
   }
 
   async renderDocx(dataUrl) {
     const mammoth = await import('mammoth/mammoth.browser.min.js');
+    const DOMPurify = (await import('dompurify')).default;
     const blob = dataUrlToBlob(dataUrl);
     const result = await mammoth.convertToHtml({ arrayBuffer: await blob.arrayBuffer() });
-    this.container.innerHTML = wrapMarkdown(result.value);
+    this.container.innerHTML = wrapMarkdown(DOMPurify.sanitize(result.value));
   }
 
   async renderPptx(dataUrl) {

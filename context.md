@@ -25,12 +25,12 @@
 | **Deploy**          | ✅ Live                        | **https://caim.web.app** · Functions `githubDeployProxy` + `gitCorsProxy`. |
 | **Firebase config** | ✅ Real                        | `projectId: cerraimobile` · Blaze · Auth + Firestore (usuário `gestor.renatorosa@gmail.com`). |
 | **Performance (S10)** | ✅ Core ~156KB gzip        | Framework7 removido (mini-UI `notify.js`), CodeMirror minimal, code-splitting nativo. CSS 5,6KB. Lazy: xlsx/mammoth/isomorphic-git/firebase. |
-| **Testes (Vitest)** | ✅ 37 verdes (16/08)      | `fake-indexeddb` + `vitest.config.js`. Cobre: VFS (CRUD/path/persistência/eventos), EventEmitter, SecurityService (AES-GCM), Drivers (JSON/XML + truncamento), Tool Executor (path traversal). |
-| **Hardening (16/08)** | ✅ Aplicado              | `gitCorsProxy` com host-allowlist GitHub + rate limit por usuário/IP · parser dos drivers tolerante a **truncamento** (S15) · `syncViewport` com throttle `requestAnimationFrame` (jitter do teclado iOS). |
-| **Git**             | ✅ Commitado/pushado           | `main` no `github.com/renato0503/caim` (`a6e5bdd`). *(S13 não commitado ainda.)* |
-| **Pendências**      | 🔄 **S13 parcial** (automação ✅ / device real ⏳), S14–S19 (homologação J1–J7), S11 (memory/App Check), S12 (iPhones/Lighthouse ≥90) | |
+| **Testes (Vitest)** | ✅ 41 verdes (16/08)      | `fake-indexeddb` + `vitest.config.js`. Cobre: VFS (CRUD/path/persistência/eventos), EventEmitter, SecurityService (AES-GCM), Drivers (JSON/XML + truncamento), Tool Executor (path traversal), **Git offline (init/add/commit/status/log/remotes)**. |
+| **Hardening (16/08)** | ✅ Aplicado              | `gitCorsProxy` com host-allowlist GitHub + rate limit por usuário/IP · parser dos drivers tolerante a **truncamento** (S15) · `syncViewport` com throttle `requestAnimationFrame` (jitter do teclado iOS) · **CSP/security headers no Hosting** · **XSS no viewer (DOMPurify em xlsx/docx)** · **gitFs com stat por hash de conteúdo** (edição no mesmo 1s não passa despercebida). |
+| **Git**             | ✅ Commitado/pushado           | `main` no `github.com/renato0503/caim`. **S13 automático commitado** (testes git offline + hardening). |
+| **Pendências**      | 🔄 **S13 device real ⏳** (PWA iPhone, cadastro/login reais, `seed-admin`, `GITHUB_OWNER_PAT`, regras Firestore 2 contas), S14–S19 (homologação J2–J7), S11 (memory/App Check), S12 (iPhones/Lighthouse ≥90) | |
 
-> **Próximo passo:** **S13 — homologação em device real** (parte automática ✅): instalar PWA no iPhone, cadastro/login reais, `seed-admin` (role owner), `firebase functions:secrets:set GITHUB_OWNER_PAT` e testar regras Firestore com 2 contas. Depois seguir a jornada J2–J7 (S14–S19) na ordem de `docs/diagrams/journey.md`.
+> **Próximo passo:** **S13 — homologação em device real** (parte automática ✅, manual ⏳): instalar PWA no iPhone, cadastro/login reais, `seed-admin` (role owner), `firebase functions:secrets:set GITHUB_OWNER_PAT` e testar regras Firestore com 2 contas. Depois seguir a jornada J2–J7 (S14–S19) na ordem de `docs/diagrams/journey.md`.
 
 ---
 

@@ -46,6 +46,16 @@
 - **Testes:** +13 → **37 verdes** (drivers truncamento JSON/XML, tool-executor path traversal, `.git`, listDir).
 
 
+### Sessão de 16/08 (cont.) — S13 git offline + hardening S2/S18/S17
+
+- **Testes de Git offline (S2/S13):** `src/js/git/git-service.test.js` cobre `init → add → commit → log`, status "novo"/"modificado", persistência entre instâncias e `setRemote/getRemote` (troca de origin). **41 testes verdes.**
+- **`gitFs` com `stat` por hash de conteúdo (S2):** `compareStats` do isomorphic-git só olha segundos; edições no mesmo segundo passavam despercebidas. `contentStamp` (FNV-1a 32-bit dupla) torna `mtime/ctime` derivados do conteúdo → conteúdo igual reusa cache do index, diferente força re-leitura.
+- **`gitFs.readFile` com encoding (S2):** suporta `{ encoding: 'utf8' }` (HEAD/refs/config) e propaga `err.code = 'ENOENT'` (isomorphic-git confia no `code`); `stat` idem.
+- **`deleteRemote` (S2):** isomorphic-git 1.41 usa `git.deleteRemote` (não `removeRemote`) — fix em `setRemote`.
+- **CSP + security headers (S18/S11):** `firebase.json` com `Content-Security-Policy` (sem `eval`, só `self` + fontes Google), `X-Content-Type-Options`, `Referrer-Policy` e `X-Frame-Options`.
+- **XSS no viewer (S18):** `renderXlsx` e `renderDocx` sanitizam a saída com DOMPurify (SheetJS/mammoth podem embutir HTML malicioso).
+- **LCP (S12/S17):** fonte Press Start 2P sai do caminho crítico (load assíncrono em `app.js`), `preload` + `fetchpriority=high` no icon-192.
+
 ### Sessão de 15/08 — Rebuild F7 + Stack + Editor/Explorer + Visualizador
 
 - **Rebuild do app shell em Framework7 9.1.2 (Vanilla JS):** abas Chat/Editor/Files + tabbar inferior com SVGs inline. Substituiu a UI custom manual.

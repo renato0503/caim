@@ -19,15 +19,33 @@ function isGitPath(p) {
   return p === '.git' || p.startsWith(GIT_PREFIX);
 }
 
+function contentStamp(content) {
+  const bytes = typeof content === 'string' ? encoder.encode(content) : new Uint8Array(content);
+  let h1 = 2166136261;
+  let h2 = 2246822519;
+  for (let i = 0; i < bytes.length; i += 1) {
+    h1 ^= bytes[i];
+    h1 = Math.imul(h1, 16777619);
+    h2 ^= bytes[i];
+    h2 = Math.imul(h2, 16777619) + h1;
+  }
+  return { mtime: h1 >>> 0, ctime: h2 >>> 0 };
+}
+
 function statFile(content) {
+  const stamp = contentStamp(content);
   return {
     type: 'file',
     size: typeof content === 'string' ? content.length : content.byteLength,
     mode: 0o100644,
     uid: 0,
     gid: 0,
-    mtimeMs: Date.now(),
-    ctimeMs: Date.now(),
+    // compareStats do isomorphic-git só olha segundos (e ignora inode no win32).
+    // Date.now() truncado a 1s + tamanho igual fazia edições no mesmo segundo
+    // passarem despercebidas. Hash do conteúdo => conteúdo igual reusa o cache
+    // do index (correto) e conteúdo diferente força re-leitura (correto).
+    mtimeMs: 1_500_000_000_000 + (stamp.mtime % 1_000_000_000),
+    ctimeMs: 1_500_000_000_000 + (stamp.ctime % 1_000_000_000),
     isFile: () => true,
     isDirectory: () => false,
     isSymbolicLink: () => false,
@@ -51,12 +69,21 @@ function statDir() {
 
 export const gitFs = {
   promises: {
-    async readFile(path) {
+    async readFile(path, options = {}) {
       const p = stripLeading(path);
-      if (!p) return new Uint8Array(0);
-      const { content } = await vfs.readFile(p);
-      if (isGitPath(p)) return base64ToBytes(content);
-      return encoder.encode(content);
+      const encoding = typeof options === 'string' ? options : options?.encoding;
+      if (!p) return encoding === 'utf8' ? '' : new Uint8Array(0);
+      let content;
+      try {
+        ({ content } = await vfs.readFile(p));
+      } catch (err) {
+        err.code = 'ENOENT'; // isomorphic-git confia em err.code para decisões
+        throw err;
+      }
+      // Arquivos internos do git (.git/) são armazenados em base64 (binário-safe).
+      // Quando o isomorphic-git pede utf8 (HEAD/refs/config), devolvemos string.
+      const bytes = isGitPath(p) ? base64ToBytes(content) : encoder.encode(content);
+      return encoding === 'utf8' ? decoder.decode(bytes) : bytes;
     },
 
     async writeFile(path, data) {
@@ -95,12 +122,14 @@ export const gitFs = {
 
     async stat(path) {
       const p = stripLeading(path);
-      if (!p) return statDir();
+      if (!p || p === '.') return statDir();
       const file = await vfs.db.files.get(p);
       if (file) return statFile(file.content);
       const dir = await vfs.db.directories.get(p);
       if (dir) return statDir();
-      throw new Error(`ENOENT: no such file or directory, stat '${path}'`);
+      const err = new Error(`ENOENT: no such file or directory, stat '${path}'`);
+      err.code = 'ENOENT';
+      throw err;
     },
 
     async lstat(path) {

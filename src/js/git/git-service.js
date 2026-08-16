@@ -118,7 +118,7 @@ class GitService {
     const git = await getGit();
     const remotes = await git.listRemotes({ fs: gitFs, dir: GIT_DIR });
     if (remotes.some((r) => r.remote === 'origin')) {
-      await git.removeRemote({ fs: gitFs, dir: GIT_DIR, remote: 'origin' });
+      await git.deleteRemote({ fs: gitFs, dir: GIT_DIR, remote: 'origin' });
     }
     await git.addRemote({ fs: gitFs, dir: GIT_DIR, remote: 'origin', url });
   }

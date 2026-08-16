@@ -610,8 +610,18 @@ $chatInput.addEventListener('keydown', (event) => {
 
 let authViews = null;
 
+// S12: fonte pixel (Press Start 2P) carregada fora do caminho crítico de render.
+function loadPixelFont() {
+  if (document.fonts?.check?.('12px "Press Start 2P"')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
+  document.head.appendChild(link);
+}
+
 async function bootstrap() {
   await vfs.ready;
+  loadPixelFont();
   await tree.render();
   editor.setStatus('Pronto');
 
