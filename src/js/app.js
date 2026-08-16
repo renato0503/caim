@@ -308,6 +308,16 @@ vfs.events.on('vfs:changed', ({ type, path }) => {
   if (type === 'create' && !path.endsWith('/')) {
     editor.openFile(path, { force: true });
   }
+  // S23/J4: conflito de edição — a IA atualizou um arquivo que o usuário
+  // está editando (dirty). Não sobrescrever silenciosamente; pedir escolha.
+  if (type === 'update' && editor.isDirty(path)) {
+    notify.confirm(
+      `O agente modificou "${path}" enquanto você o editava.\n\nDeseja manter suas alterações locais?`,
+      'Conflito de edição',
+      () => editor.markStale(path),        // manter local: marca stale para reabrir depois
+      () => editor.openFile(path, { force: true }) // usar IA: recarrega o arquivo
+    );
+  }
 });
 
 // ============================================================
@@ -470,11 +480,28 @@ async function sendMessage() {
         $chatMessages.scrollTop = $chatMessages.scrollHeight;
       },
     });
-    const truncatedNote = result.truncated ? '\n\n⚠ **Resposta truncada** — o modelo cortou a saída no meio. Reenvie o prompt para completar.' : '';
-    const extra = `${truncatedNote}${result.files?.length ? `\n\nArquivos criados: ${result.files.join(', ')}` : ''}`;
+    const truncatedNote = result.truncated ? '\n\n⚠ **Resposta truncada** — o modelo cortou a saída no meio.' : '';
+    const binaryNote = result.binaryWarnings?.length ? `\n\n⚠ Binário ignorado na geração: ${result.binaryWarnings.join(', ')}. Use o upload.` : '';
+    const costNote = result.approxTokens ? `\n\n*~${result.approxTokens} tokens estimados nesta geração.*` : '';
+    const extra = `${truncatedNote}${binaryNote}${result.files?.length ? `\n\nArquivos criados: ${result.files.join(', ')}` : ''}${costNote}`;
     finalText = `${buf || result.message}${extra}`;
     textEl.textContent = '';
     renderMarkdownTo(textEl, finalText);
+    // S22: "Continuar geração" quando a resposta foi truncada no meio de um arquivo
+    if (result.truncated) {
+      const contBtn = document.createElement('button');
+      contBtn.className = 'chat-continue-btn';
+      contBtn.textContent = 'Continuar geração';
+      contBtn.addEventListener('click', () => {
+        const lastFile = result.files?.[result.files.length - 1];
+        const tail = lastFile ? ` Continue o arquivo ${lastFile} de onde parou.` : '';
+        $chatInput.value = `${text}${tail}`;
+        autoResize();
+        sendMessage();
+      });
+      const bubble = reply.querySelector('.message-bubble');
+      bubble.appendChild(contBtn);
+    }
     if (thinkOn && (thinking || result.thinking)) {
       ensureThinkingBox(reply, thinking || result.thinking, true);
     }

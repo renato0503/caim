@@ -235,11 +235,40 @@ export class CodeEditor {
       .map((f) => ({ path: f.path, oldContent: f.savedContent, newContent: f.content }));
   }
 
-  // S7: arquivos abertos para injetar como contexto no agente
-  getOpenFilesContext() {
-    return this.openFiles
-      .slice(-3)
-      .map((f) => ({ path: f.path, content: f.content }));
+  // S22: arquivos abertos para injetar como contexto no agente — até 16KB,
+  // priorizando: 1) arquivo ativo, 2) sujos, 3) .json de config, 4) demais.
+  // Corta do menos relevante em vez de truncar o mais importante no meio.
+  getOpenFilesContext(maxBytes = 16384) {
+    const score = (f) => {
+      let s = 0;
+      if (f.path === this.activePath) s += 100;
+      if (f.dirty) s += 40;
+      if (/\.(json|config|yaml|yml)$/.test(f.path)) s += 15;
+      return s;
+    };
+    const sorted = [...this.openFiles].sort((a, b) => score(b) - score(a));
+    const parts = [];
+    let total = 0;
+    for (const f of sorted) {
+      if (!f.path || typeof f.content !== 'string') continue;
+      const chunk = f.content.slice(0, 4000);
+      if (total + chunk.length > maxBytes) break;
+      total += chunk.length;
+      parts.push({ path: f.path, content: chunk });
+    }
+    return parts;
+  }
+
+  // S23/J4: o arquivo aberto tem edições não salvas (dirty)?
+  isDirty(path) {
+    return !!this.openFiles.find((f) => f.path === path)?.dirty;
+  }
+
+  // S23/J4: mantém as alterações locais após um vfs:changed externo —
+  // marca o arquivo como "stale" para o próximo openFile recarregar do VFS.
+  markStale(path) {
+    const file = this.openFiles.find((f) => f.path === path);
+    if (file) file.savedAt = 0;
   }
 
   async closeFile(path) {

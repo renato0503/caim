@@ -115,14 +115,41 @@ describe('AgentManager — failover e chaves (S8/S14)', () => {
     expect(result.message).toBe('ok');
   });
 
-  it('todas as chaves falham → erro de failover com as causas', async () => {
+  it('todas as chaves falham → erro claro com as causas', async () => {
     dbService.getUserProfile.mockResolvedValue({
       llm_keys: [
         { provider: 'deepseek', key: encrypted('a', 'ct1'), baseUrl: '', model: '', priority: 1, active: true },
       ],
     });
     globalThis.fetch = vi.fn().mockResolvedValue(statusResponse(401));
-    await expect(agentManager.sendPrompt({ text: 'x', uid: 'u1' })).rejects.toThrow(/failover/);
+    await expect(agentManager.sendPrompt({ text: 'x', uid: 'u1' })).rejects.toThrow(
+      /Todas as suas chaves LLM falharam/
+    );
+  });
+
+  it('testConnection valida chave válida', async () => {
+    const { security } = await import('../security/security-service.js');
+    security.decrypt.mockResolvedValue('sk-ok');
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }));
+    const res = await agentManager.testConnection({
+      provider: 'deepseek',
+      key: encrypted('a', 'ct1'),
+      baseUrl: '',
+      model: '',
+    });
+    expect(res.ok).toBe(true);
+  });
+
+  it('testConnection reporta 401 como chave inválida', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(statusResponse(401));
+    const res = await agentManager.testConnection({
+      provider: 'deepseek',
+      key: encrypted('a', 'ct1'),
+      baseUrl: '',
+      model: '',
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error).toContain('401');
   });
 
   it('ordena por prioridade e ignora baseUrl quando provider conhecido', async () => {

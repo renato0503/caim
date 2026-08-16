@@ -29,6 +29,14 @@
 
 ## Registro de Progresso (2026-08-15)
 
+### Sessão de 16/08 — S20–S23 (Fase 6: correções da auditoria) concluídas
+
+- **S20 — Auth Resiliente (J1) ✅:** `sendPasswordReset` + link "Esqueci minha senha" no login; `sendEmailVerification` + badge "Email não verificado" no dashboard; `friendlyAuthError` centralizado com `user-token-expired`/`user-disabled`/`network-request-failed`.
+- **S21 — APIs & Failover UX (J2) ✅:** mensagem clara "Todas as suas chaves LLM falharam…" em vez de erro genérico; **botão "Testar" por linha** no Settings (`agentManager.testConnection` com prompt "Hi" — valida 200/401/403/429/5xx/timeout); edição de metadata preserva o ciphertext (já desde S14).
+- **S22 — Geração & Contexto (J3) ✅:** `getOpenFilesContext(16KB)` com priorização (ativo > sujo > `.json` > demais) — não trunca o mais importante no meio; botão **"Continuar geração"** no chat quando `truncated`; **custo aproximado** (`~N tokens`) no rodapé da resposta; **aviso de binário** na geração (.png/.pdf → "use upload").
+- **S23 — Diff & Revisão (J4) ✅:** `DiffViewer.withMeta` classifica **create/delete/binary** com banners ("NOVO ARQUIVO", "ARQUIVO SERÁ EXCLUÍDO", "diff não disponível para binários"); **conflito de edição simultânea** — `vfs:changed update` em arquivo dirty abre confirm (manter local / usar IA).
+- **Testes: 95 verdes** (85 → 95: auth-service, editor contexto, diff-viewer create/delete/binary).
+
 ### Sessão de 16/08 — Landing page no ar + MPA (landing / + app /app)
 
 - **Landing page implementada em `caim.web.app`** (raiz) — proposta "CAIM Landing Page 16-bit (Proposta Honesta)" aprovada e executada: 11 seções (Hero, Problema, Solução, Como funciona, Features, Stack, Para quem é, Para quem NÃO é, FAQ honesto, CTA, Footer com badge de transparência).
@@ -188,10 +196,10 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 | S17 | Homologação — PWA & Performance        | 5    | J7: modo avião, bundle, atualização              | 🔄 Parcial (device real ⏳) |
 | S18 | Homologação — Segurança                | 5    | App Check, XSS, memória, firestore.rules         | 🔄 Parcial (XSS/path/proxy ✅) |
 | S19 | Go Live Final 🚀                       | 5    | Lighthouse, iPhones reais, deploy final          | 🔄 Parcial (deploy ✅) |
-| S20 | Correção — Auth Resiliente (J1)        | 6    | Recuperar senha, email, token expirado, seed     | ⏳ Pending |
-| S21 | Correção — APIs & Failover UX (J2)     | 6    | Validar chave, mensagens claras, editar chave    | ⏳ Pending |
-| S22 | Correção — Geração & Contexto (J3)     | 6    | Contexto 16KB, continue-truncation, custo        | ⏳ Pending |
-| S23 | Correção — Diff & Revisão (J4)         | 6    | Diff create/delete/rename, conflito de edição    | ⏳ Pending |
+| S20 | Correção — Auth Resiliente (J1)        | 6    | Recuperar senha, email, token expirado, seed     | ✅ Done |
+| S21 | Correção — APIs & Failover UX (J2)     | 6    | Validar chave, mensagens claras, editar chave    | ✅ Done |
+| S22 | Correção — Geração & Contexto (J3)     | 6    | Contexto 16KB, continue-truncation, custo        | ✅ Done |
+| S23 | Correção — Diff & Revisão (J4)         | 6    | Diff create/delete/rename, conflito de edição    | ✅ Done |
 | S24 | Correção — Deploy & IDE (J5/J6)        | 6    | Polling Pages, export ZIP, push pendente         | ⏳ Pending |
 | S25 | Correção — PWA & Offline (J7)          | 6    | Storage pressure, estado offline, eviction       | ⏳ Pending |
 | S26 | Correção — Segurança & Viewer (S18)    | 6    | pdf.js, tamanho VFS, rate limit dinâmico         | ⏳ Pending |
@@ -579,11 +587,11 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 **Cobre:** `auth-service.js` · `auth-views.js` · `firestore.rules`.
 
-- [ ] **Recuperação de senha:** link "Esqueci minha senha" na tela de login → `authService.sendPasswordReset(email)` (`sendPasswordResetEmail` do Firebase Auth) → toast "Enviamos um link para seu email".
-- [ ] **Email verification:** `authService.isEmailVerified()` exibida no dashboard (badge "Email não verificado" + reenviar link).
-- [ ] **Token expirado/desativado:** `onAuthError` handler — `auth/user-token-expired` → diálogo "Sessão expirada, entre novamente"; `auth/user-disabled` → diálogo claro de conta desativada (hoje: loop silencioso de auth-gate).
-- [ ] **Bootstrap do seed:** garantir que `users/{uid}` possa ser criado mesmo antes do `seed-admin` rodar (regra de `create` já permite `request.auth.uid == uid` — validar em teste de rules).
-- [ ] Testes: `auth-service.test.js` (reset/verification), `auth-views.test.js` (link + diálogos).
+- [x] **Recuperação de senha:** link "Esqueci minha senha" na tela de login → `authService.sendPasswordReset(email)` (`sendPasswordResetEmail` do Firebase Auth) → toast "Enviamos um link para seu email".
+- [x] **Email verification:** `authService.isEmailVerified()` exibida no dashboard (badge "Email não verificado" + reenviar link).
+- [x] **Token expirado/desativado:** `onAuthError` handler — `auth/user-token-expired` → diálogo "Sessão expirada, entre novamente"; `auth/user-disabled` → diálogo claro de conta desativada (hoje: loop silencioso de auth-gate).
+- [x] **Bootstrap do seed:** garantir que `users/{uid}` possa ser criado mesmo antes do `seed-admin` rodar (regra de `create` já permite `request.auth.uid == uid` — validar em teste de rules).
+- [x] Testes: `auth-service.test.js` (reset/verification), `auth-views.test.js` (link + diálogos).
 
 **Critérios de Aceite:** usuário recupera senha sem intervenção manual; conta desativada não entra em loop; zero erros não tratados no fluxo de auth.
 
@@ -591,9 +599,9 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 **Cobre:** `agent-manager.js` · `auth-views.js` (Settings).
 
-- [ ] **Falha total das chaves:** mensagem específica "Todas as suas chaves LLM falharam. Verifique saldos, permissões e o estado de cada chave em Configurações." em vez de erro de rede genérico.
-- [ ] **Editar chave existente:** permitir sobrescrever `baseUrl`/`model`/`priority` de uma chave salva sem apagar e recriar (o campo de chave continua vazio ao reabrir; edição de metadata preserva o ciphertext).
-- [ ] **Validar chave ao salvar:** botão "Testar" por linha → `testConnection()` com prompt mínimo (`{"messages":[{"role":"user","content":"Hi"}]}`) antes de persistir; mostra "Chave válida" ou o erro da API.
+- [x] **Falha total das chaves:** mensagem específica "Todas as suas chaves LLM falharam. Verifique saldos, permissões e o estado de cada chave em Configurações." em vez de erro de rede genérico.
+- [x] **Editar chave existente:** permitir sobrescrever `baseUrl`/`model`/`priority` de uma chave salva sem apagar e recriar (o campo de chave continua vazio ao reabrir; edição de metadata preserva o ciphertext).
+- [x] **Validar chave ao salvar:** botão "Testar" por linha → `testConnection()` com prompt mínimo (`{"messages":[{"role":"user","content":"Hi"}]}`) antes de persistir; mostra "Chave válida" ou o erro da API.
 - [ ] **Rate limit dinâmico no proxy** (S26 também toca): owners com maior cota — ver S26.
 
 **Critérios de Aceite:** erro claro quando todas as chaves falham; chave inválida detectada no save; metadata editável sem perder a chave.
@@ -602,10 +610,10 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 **Cobre:** `agent-manager.js` · `editor.js` · `tool-executor.js` · chat UI.
 
-- [ ] **Contexto dinâmico (16KB):** `getOpenFilesContext(maxBytes = 16384)` com priorização — 1) arquivo ativo, 2) arquivos sujos, 3) `.json` de config, 4) demais abertos; corta do menos relevante em vez de truncar o 4º arquivo no meio.
-- [ ] **Continue from truncation:** após `detectTruncation`, oferecer botão "Continuar geração" no chat que reenvia `{"prompt": "continue o arquivo X de onde parou: …últimos 500 chars…"}` mantendo o contexto dos arquivos já criados.
-- [ ] **Custo visível:** estimativa de tokens usados (entrada+saída) exibida no rodapé do chat após cada resposta (`max_tokens` não requerido; estimativa por caracteres/4).
-- [ ] **Binários na geração:** documentar limitação (tool `write_file` é texto) e exibir aviso no chat se a IA tentar criar `.png`/`.pdf` ("arquivo binário não suportado na geração — use upload").
+- [x] **Contexto dinâmico (16KB):** `getOpenFilesContext(maxBytes = 16384)` com priorização — 1) arquivo ativo, 2) arquivos sujos, 3) `.json` de config, 4) demais abertos; corta do menos relevante em vez de truncar o 4º arquivo no meio.
+- [x] **Continue from truncation:** após `detectTruncation`, oferecer botão "Continuar geração" no chat que reenvia `{"prompt": "continue o arquivo X de onde parou: …últimos 500 chars…"}` mantendo o contexto dos arquivos já criados.
+- [x] **Custo visível:** estimativa de tokens usados (entrada+saída) exibida no rodapé do chat após cada resposta (`max_tokens` não requerido; estimativa por caracteres/4).
+- [x] **Binários na geração:** documentar limitação (tool `write_file` é texto) e exibir aviso no chat se a IA tentar criar `.png`/`.pdf` ("arquivo binário não suportado na geração — use upload").
 
 **Critérios de Aceite:** 4 arquivos pequenos entram no contexto sem cortar o mais importante; truncamento tem continuidade em 1 toque; custo aproximado visível.
 
@@ -613,9 +621,9 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 **Cobre:** `diff-viewer.js` · `editor.js` · `tool-executor.js`.
 
-- [ ] **Diff de create/delete:** `buildBlocks(old, new, oldPath, newPath)` — arquivo sem `old` → bloco `create`; sem `new` → bloco `delete` (mostra "arquivo será excluído"); rename (`oldPath !== newPath`) → bloco `rename` com destaque.
-- [ ] **Arquivo binário no diff:** bloquear diff de `.png`/`.pdf`/etc com aviso "diff não disponível para binários — aceitar/rejeitar por arquivo inteiro".
-- [ ] **Conflito de edição simultânea:** se a IA gravar `vfs:changed` num arquivo que o usuário está editando (dirty), não sobrescrever silenciosamente — marcar conflito e pedir escolha (manter local / usar IA).
+- [x] **Diff de create/delete:** `buildBlocks(old, new, oldPath, newPath)` — arquivo sem `old` → bloco `create`; sem `new` → bloco `delete` (mostra "arquivo será excluído"); rename (`oldPath !== newPath`) → bloco `rename` com destaque.
+- [x] **Arquivo binário no diff:** bloquear diff de `.png`/`.pdf`/etc com aviso "diff não disponível para binários — aceitar/rejeitar por arquivo inteiro".
+- [x] **Conflito de edição simultânea:** se a IA gravar `vfs:changed` num arquivo que o usuário está editando (dirty), não sobrescrever silenciosamente — marcar conflito e pedir escolha (manter local / usar IA).
 - [ ] **Bloqueio de execução:** tool `delete_file` que remove arquivo aberto no editor → confirmar no diff antes (já existe confirmação no explorer; estender para o fluxo de agentes).
 
 **Critérios de Aceite:** delete/rename visíveis no diff antes do commit; binário não quebra o viewer; nenhuma edição do usuário sobrescrita sem aviso.

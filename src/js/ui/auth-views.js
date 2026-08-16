@@ -1,6 +1,7 @@
 import { authService } from '../auth/auth-service.js';
 import { dbService } from '../db/db-service.js';
 import { security } from '../security/security-service.js';
+import { agentManager } from '../agents/agent-manager.js';
 
 export const PROVIDER_LABELS = { deepseek: 'DeepSeek', qwen: 'Qwen', openai: 'OpenAI' };
 
@@ -92,11 +93,28 @@ export class AuthViews {
       document.getElementById('auth-tab-signup').classList.toggle('active', signup);
       document.getElementById('auth-name').classList.toggle('hidden', !signup);
       document.getElementById('auth-whatsapp').classList.toggle('hidden', !signup);
+      document.getElementById('auth-forgot').classList.toggle('hidden', signup);
       document.getElementById('auth-submit').textContent = signup ? 'Criar conta' : 'Entrar';
       this.setError('');
     };
     document.getElementById('auth-tab-login').addEventListener('click', () => toggle(false));
     document.getElementById('auth-tab-signup').addEventListener('click', () => toggle(true));
+
+    // S20: "Esqueci minha senha" — envia link de reset por email
+    document.getElementById('auth-forgot').addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value.trim();
+      if (!email) {
+        this.setError('Digite seu email para recuperar a senha.');
+        return;
+      }
+      try {
+        await authService.sendPasswordReset(email);
+        this.setError('');
+        this.toast('Enviamos um link de recuperação para seu email.');
+      } catch (err) {
+        this.setError(this.friendlyAuthError(err));
+      }
+    });
 
     document.getElementById('auth-submit').addEventListener('click', async () => {
       const email = document.getElementById('auth-email').value.trim();
@@ -125,16 +143,7 @@ export class AuthViews {
   }
 
   friendlyAuthError(err) {
-    const code = err?.code || '';
-    const map = {
-      'auth/email-already-in-use': 'Este email já está cadastrado.',
-      'auth/invalid-credential': 'Email ou senha incorretos.',
-      'auth/wrong-password': 'Email ou senha incorretos.',
-      'auth/user-not-found': 'Email não cadastrado.',
-      'auth/weak-password': 'Senha muito fraca (mín. 6 caracteres).',
-      'auth/invalid-email': 'Email inválido.',
-    };
-    return map[code] || err?.message || 'Falha na autenticação.';
+    return authService.friendlyAuthError(err);
   }
 
   setError(text) {
@@ -160,17 +169,30 @@ export class AuthViews {
     document.getElementById('dashboard-logout').addEventListener('click', async () => {
       await authService.logout();
     });
+    // S20: reenviar link de verificação de email
+    document.getElementById('dashboard-verify-btn').addEventListener('click', async () => {
+      try {
+        await authService.sendEmailVerification();
+        this.toast('Link de verificação reenviado. Cheque seu email.');
+      } catch (err) {
+        this.toast(`Erro: ${this.friendlyAuthError(err)}`, true);
+      }
+    });
   }
 
   async renderDashboard() {
     const nameEl = document.getElementById('dashboard-user-name');
     const projectsEl = document.getElementById('dashboard-projects');
+    const verifyEl = document.getElementById('dashboard-verify');
     if (this.devMode || !this.user) {
       nameEl.textContent = this.devMode ? 'Modo dev (Firebase não configurado)' : '';
       projectsEl.innerHTML = '<div class="auth-note">Sem histórico de MVPs neste modo.</div>';
+      if (verifyEl) verifyEl.classList.add('hidden');
       return;
     }
     nameEl.textContent = this.user.displayName || this.user.email || 'Bem-vindo(a)';
+    // S20: badge de email não verificado
+    if (verifyEl) verifyEl.classList.toggle('hidden', !!authService.isEmailVerified());
     try {
       const projects = await dbService.listProjects(this.user.uid);
       projectsEl.innerHTML = '';
@@ -234,13 +256,47 @@ export class AuthViews {
         </select>
         <input data-field="baseUrl" placeholder="Base URL (opcional, ex: https://proxy/opencode/v1)" value="${escapeHtml(data.baseUrl || '')}">
         <input data-field="model" placeholder="Modelo (opcional, ex: deepseek-chat)" value="${escapeHtml(data.model || '')}">
-        <input data-field="key" type="password" placeholder="API key (será cifrada)" value="">
+        <div class="settings-key-row">
+          <input data-field="key" type="password" placeholder="API key (será cifrada)" value="">
+          <button class="dash-btn dash-btn-sm" data-act="test" type="button">Testar</button>
+        </div>
         <div class="settings-row-foot">
           <label>Prioridade</label>
           <input data-field="priority" type="number" min="1" max="3" value="${data.priority || index + 1}">
         </div>
+        <div class="settings-test-result" data-field="testResult"></div>
       </div>
     `;
+    // S21: valida a chave com um prompt mínimo antes de salvar
+    row.querySelector('[data-act="test"]').addEventListener('click', async () => {
+      const read = (f) => row.querySelector(`[data-field="${f}"]`).value;
+      const provider = read('provider');
+      const baseUrl = read('baseUrl').trim();
+      const model = read('model').trim();
+      const plainKey = read('key').trim();
+      const resultEl = row.querySelector('[data-field="testResult"]');
+      let key = row.__encrypted || null;
+      if (plainKey) {
+        key = await security.encrypt(plainKey);
+      }
+      if (!key) {
+        resultEl.textContent = 'Digite a chave para testar.';
+        resultEl.className = 'settings-test-result';
+        return;
+      }
+      const btn = row.querySelector('[data-act="test"]');
+      const prevText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Testando…';
+      try {
+        const res = await agentManager.testConnection({ provider, key, baseUrl, model });
+        resultEl.textContent = res.ok ? 'Chave válida ✓' : `Falha: ${res.error}`;
+        resultEl.className = 'settings-test-result ' + (res.ok ? 'ok' : 'fail');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prevText;
+      }
+    });
     return row;
   }
 

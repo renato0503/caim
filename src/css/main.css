@@ -512,8 +512,20 @@ button,
 
 .think-toggle input {
   accent-color: var(--accent);
-  width: 16px;
-  height: 16px;
+  width: 16px;  height: 16px;
+}
+
+.chat-continue-btn {
+  display: block;
+  margin: 8px 0 0;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .chat-stop {
@@ -1342,6 +1354,19 @@ button,
   visibility: visible;
 }
 
+/* S20: link "Esqueci minha senha" / "Reenviar link" */
+.auth-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  padding: 4px 0;
+  cursor: pointer;
+  text-align: center;
+  align-self: center;
+}
+.auth-link:hover { text-decoration: underline; }
+
 .auth-submit {
   background: var(--accent);
   color: var(--text-on-accent);
@@ -1468,6 +1493,31 @@ button,
 .dash-btn.dash-danger:active {
   background: rgba(239, 68, 68, 0.28);
 }
+
+.dash-btn.dash-btn-sm {
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.settings-key-row {
+  display: flex;
+  gap: 8px;
+}
+.settings-key-row input {
+  flex: 1;
+  min-width: 0;
+}
+.settings-key-row .dash-btn-sm {
+  flex-shrink: 0;
+}
+
+.settings-test-result {
+  font-size: 12px;
+  min-height: 16px;
+}
+.settings-test-result.ok { color: var(--success); }
+.settings-test-result.fail { color: var(--danger); }
 
 .settings-shell {
   justify-content: flex-start;
@@ -1807,6 +1857,19 @@ button,
   gap: 8px;
   margin-bottom: 10px;
 }
+
+/* S23/J4: banners de create/delete/binary no diff */
+.dv-banner {
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.dv-banner-create { background: rgba(74, 222, 128, 0.15); color: var(--success); border: 1px solid var(--success); }
+.dv-banner-delete { background: rgba(248, 113, 113, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+.dv-banner-binary { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid var(--warning); }
 
 .dv-btn {
   flex: 1;

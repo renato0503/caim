@@ -137,14 +137,17 @@ class AgentManager {
         errors.push(`${entry.provider}: ${err.message}`);
       }
     }
-    throw new Error(`Todas as APIs falharam (failover). ${errors.join(' | ')}`);
+    // S21: mensagem clara quando TODAS as chaves falham (não é erro de rede genérico)
+    throw new Error(
+      'Todas as suas chaves LLM falharam. Verifique saldos, permissões e o estado de cada chave em Configurações.' +
+        (errors.length ? ` (${errors.join(' | ')})` : '')
+    );
   }
 
   async liveSend(text, entry, cfg, { onChunk, onThinking, signal }) {
     const apiKey = await security.decrypt(entry.key);
     const baseUrl = (entry.baseUrl || cfg.url).replace(/\/+$/, '');
     const url = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
     const onAbort = () => controller.abort();
@@ -178,8 +181,14 @@ class AgentManager {
       const truncated = typeof this.driver.detectTruncation === 'function' && this.driver.detectTruncation(full);
       const results = [];
       const created = [];
+      const binaryWarnings = [];
       for (const t of tools) {
         try {
+          if (t.tool === 'write_file' && /\.(png|jpe?g|gif|webp|pdf|zip|docx?|xlsx?|pptx?|ico)$/i.test(t.args.path || '')) {
+            binaryWarnings.push(t.args.path);
+            results.push(`AVISO: ${t.args.path} é binário — não suportado na geração (use upload).`);
+            continue;
+          }
           const r = await toolExecutor.execute(t.tool, t.args);
           results.push(r);
           if (t.tool === 'write_file') created.push(t.args.path);
@@ -188,12 +197,53 @@ class AgentManager {
         }
       }
       if (truncated) {
-        results.push('⚠ resposta truncada: a saída do modelo foi cortada no meio. Reenvie o prompt para completar.');
+        results.push('⚠ resposta truncada: a saída do modelo foi cortada no meio. Use "Continuar geração".');
       }
-      return { message, files: created, results, thinking, truncated };
+      // S22: custo aproximado visível (caracteres / 4 ≈ tokens)
+      const approxTokens = Math.ceil((buildSystemPrompt(this.contextFiles).length + text.length + full.length) / 4);
+      return { message, files: created, results, thinking, truncated, approxTokens, binaryWarnings };
     } finally {
       clearTimeout(timeoutId);
       signal?.removeEventListener('abort', onAbort);
+    }
+  }
+
+  /**
+   * S21: valida uma chave LLM com um prompt mínimo antes de salvar no Settings.
+   * Retorna { ok, error } — não lança (usado no botão "Testar" da UI).
+   */
+  async testConnection(entry) {
+    const cfg = PROVIDERS[entry.provider];
+    if (!cfg && !entry.baseUrl) return { ok: false, error: 'Provider desconhecido' };
+    try {
+      const apiKey = await security.decrypt(entry.key);
+      const baseUrl = (entry.baseUrl || cfg.url).replace(/\/+$/, '');
+      const url = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({
+            model: entry.model || cfg.model,
+            stream: false,
+            max_tokens: 5,
+            messages: [{ role: 'user', content: 'Hi' }],
+          }),
+        });
+        if (res.ok) return { ok: true };
+        if (res.status === 401 || res.status === 403) return { ok: false, error: 'Chave inválida ou sem permissão (401/403)' };
+        if (res.status === 429) return { ok: false, error: 'Rate limit (429) — tente mais tarde' };
+        if (res.status >= 500) return { ok: false, error: `Erro do provedor (${res.status})` };
+        return { ok: false, error: `HTTP ${res.status}` };
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') return { ok: false, error: 'Timeout — verifique a base URL' };
+      return { ok: false, error: err.message || 'Falha na conexão' };
     }
   }
 

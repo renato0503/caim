@@ -104,11 +104,40 @@ export class DiffViewer {
 
   setFiles(files) {
     this.files = files
-      .map((f) => ({ ...f, blocks: buildBlocks(f.oldContent, f.newContent) }))
+      .map((f) => this.withMeta(f))
       .filter((f) => f.blocks.length > 0);
     if (this.activePath && !this.files.some((f) => f.path === this.activePath)) this.activePath = null;
     if (!this.activePath && this.files.length) this.activePath = this.files[0].path;
     this.render();
+  }
+
+  // S23/J4: classifica cada arquivo como create / delete / modify e gera blocos.
+  withMeta(f) {
+    const oldC = f.oldContent || '';
+    const newC = f.newContent || '';
+    const isBinary = /\.(png|jpe?g|gif|webp|pdf|zip|docx?|xlsx?|pptx?|ico|woff2?)$/i.test(f.path || '');
+    if (!oldC && newC) {
+      return {
+        ...f,
+        type: 'create',
+        blocks: [{ type: 'create', path: f.path, addedLines: splitLines(newC).map((t, i) => ({ text: t, num: i + 1 })), removedLines: [] }],
+      };
+    }
+    if (oldC && !newC) {
+      return {
+        ...f,
+        type: 'delete',
+        blocks: [{ type: 'delete', path: f.path, removedLines: splitLines(oldC).map((t, i) => ({ text: t, num: i + 1 })), addedLines: [] }],
+      };
+    }
+    if (isBinary) {
+      return {
+        ...f,
+        type: 'binary',
+        blocks: [{ type: 'binary', path: f.path, addedLines: [], removedLines: [] }],
+      };
+    }
+    return { ...f, type: 'modify', blocks: buildBlocks(oldC, newC) };
   }
 
   render() {
@@ -143,21 +172,40 @@ export class DiffViewer {
     const body = document.createElement('div');
     body.className = 'dv-file-body';
 
+    // S23/J4: banners para create/delete/binary
+    if (file.type === 'create') {
+      const banner = document.createElement('div');
+      banner.className = 'dv-banner dv-banner-create';
+      banner.textContent = 'NOVO ARQUIVO — será criado ao aceitar';
+      body.appendChild(banner);
+    } else if (file.type === 'delete') {
+      const banner = document.createElement('div');
+      banner.className = 'dv-banner dv-banner-delete';
+      banner.textContent = 'ARQUIVO SERÁ EXCLUÍDO — aceite para remover';
+      body.appendChild(banner);
+    } else if (file.type === 'binary') {
+      const banner = document.createElement('div');
+      banner.className = 'dv-banner dv-banner-binary';
+      banner.textContent = 'Arquivo binário — diff não disponível. Aceite/descartar por arquivo inteiro.';
+      body.appendChild(banner);
+    }
+
     const actions = document.createElement('div');
     actions.className = 'dv-file-actions';
     const acceptAll = document.createElement('button');
     acceptAll.className = 'dv-btn dv-accept';
-    acceptAll.textContent = 'Aceitar tudo';
+    acceptAll.textContent = file.type === 'delete' ? 'Aceitar exclusão' : 'Aceitar tudo';
     acceptAll.addEventListener('click', () => this.cbs.onAcceptAll?.(file.path));
     const rejectAll = document.createElement('button');
     rejectAll.className = 'dv-btn dv-reject';
-    rejectAll.textContent = 'Descartar';
+    rejectAll.textContent = file.type === 'create' ? 'Descartar' : 'Descartar';
     rejectAll.addEventListener('click', () => this.cbs.onRejectAll?.(file.path));
     actions.appendChild(acceptAll);
     actions.appendChild(rejectAll);
     body.appendChild(actions);
 
     file.blocks.forEach((block, idx) => {
+      if (block.type === 'binary') return;
       body.appendChild(this.renderBlock(file, block, idx));
     });
 

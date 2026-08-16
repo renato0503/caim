@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildBlocks, applyBlockAccept, applyBlockReject, isMinifiedFile } from './diff-viewer.js';
+import { buildBlocks, applyBlockAccept, applyBlockReject, isMinifiedFile, DiffViewer } from './diff-viewer.js';
 
 // S5/S15/J4: blocos de diff — aceitar/rejeitar bloco e filtro de arquivos minificados.
 
@@ -85,3 +85,36 @@ describe('isMinifiedFile', () => {
     expect(isMinifiedFile('style.css')).toBe(false);
   });
 });
+
+describe('DiffViewer.withMeta — create/delete/binary (S23/J4)', () => {
+  it('classifica arquivo sem old como create', () => {
+    const viewer = new DiffViewer({ container: { innerHTML: '', appendChild() {} }, onAcceptAll: null, onRejectAll: null });
+    const meta = viewer.withMeta({ path: 'novo.js', oldContent: '', newContent: 'const x = 1;\n' });
+    expect(meta.type).toBe('create');
+    expect(meta.blocks[0].addedLines.map((l) => l.text)).toEqual(['const x = 1;']);
+  });
+
+  it('classifica arquivo sem new como delete', () => {
+    const viewer = new DiffViewer({ container: { innerHTML: '', appendChild() {} }, onAcceptAll: null, onRejectAll: null });
+    const meta = viewer.withMeta({ path: 'remover.js', oldContent: 'x\n', newContent: '' });
+    expect(meta.type).toBe('delete');
+    expect(meta.blocks[0].removedLines.map((l) => l.text)).toEqual(['x']);
+  });
+
+  it('classifica binários e gera bloco sem linhas (não quebra o viewer)', () => {
+    const viewer = new DiffViewer({ container: { innerHTML: '', appendChild() {} }, onAcceptAll: null, onRejectAll: null });
+    const meta = viewer.withMeta({ path: 'img/logo.png', oldContent: 'data:image/png;base64,x', newContent: 'data:image/png;base64,y' });
+    expect(meta.type).toBe('binary');
+    expect(meta.blocks[0].type).toBe('binary');
+    expect(meta.blocks[0].addedLines).toEqual([]);
+  });
+
+  it('arquivo com mudança normal vira modify com blocos de diff', () => {
+    const viewer = new DiffViewer({ container: { innerHTML: '', appendChild() {} }, onAcceptAll: null, onRejectAll: null });
+    const meta = viewer.withMeta({ path: 'a.js', oldContent: 'a\nb\n', newContent: 'a\nc\n' });
+    expect(meta.type).toBe('modify');
+    expect(meta.blocks[0].removedLines.map((l) => l.text)).toEqual(['b']);
+    expect(meta.blocks[0].addedLines.map((l) => l.text)).toEqual(['c']);
+  });
+});
+

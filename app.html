@@ -55,6 +55,7 @@
           <input id="auth-whatsapp" type="tel" placeholder="WhatsApp (opcional)" autocomplete="tel" aria-label="WhatsApp" class="hidden">
           <input id="auth-email" type="email" placeholder="Email" autocomplete="email" aria-label="Email">
           <input id="auth-password" type="password" placeholder="Senha" autocomplete="current-password" aria-label="Senha">
+          <button id="auth-forgot" class="auth-link hidden" type="button">Esqueci minha senha</button>
           <div id="auth-error" class="auth-error"></div>
           <button id="auth-submit" class="auth-submit">Entrar</button>
         </div>
@@ -72,6 +73,10 @@
           <h1 id="dashboard-user-name" class="dash-title">Bem-vindo(a)</h1>
         </div>
         <p class="dash-subtitle">Seus MVPs publicados</p>
+        <div id="dashboard-verify" class="auth-note hidden">
+          <span>Email não verificado.</span>
+          <button id="dashboard-verify-btn" class="auth-link" type="button">Reenviar link</button>
+        </div>
         <div id="dashboard-projects" class="dash-projects"></div>
         <div class="dash-actions">
           <button id="dashboard-open-ide" class="dash-btn dash-primary">Abrir IDE</button>
