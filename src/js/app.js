@@ -106,8 +106,12 @@ document.querySelectorAll('.ab-item').forEach((btn) => {
       else { setActivity('explorer'); openDrawer(); }
     } else if (act === 'settings') {
       if (!authViews?.user) return;
-      await authViews.loadSettings();
-      authViews.show('settings');
+      try {
+        await authViews.loadSettings();
+        authViews.show('settings');
+      } catch (err) {
+        notify.toast(`Erro ao carregar Configurações: ${err.message}`, { position: 'center' });
+      }
     }
   });
 });
@@ -323,8 +327,12 @@ $newFileBtn.addEventListener('click', () => {
 
 $settingsBtn.addEventListener('click', async () => {
   if (!authViews?.user) return;
-  await authViews.loadSettings();
-  authViews.show('settings');
+  try {
+    await authViews.loadSettings();
+    authViews.show('settings');
+  } catch (err) {
+    notify.toast(`Erro ao carregar Configurações: ${err.message}`, { position: 'center' });
+  }
 });
 
 // Upload de arquivos locais → VFS (texto ou data URL) → preview
