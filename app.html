@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Fonte pixel (Press Start 2P) carregada de forma assíncrona via app.js
        para tirá-la do caminho crítico de render (LCP/FCP). -->
-  <link rel="preload" as="image" href="/assets/icons/icon-192.png" fetchpriority="high">
+  <link rel="preload" as="image" href="/assets/icons/logo_caim.svg" fetchpriority="high">
   <link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" href="/assets/splash/splash-640x1136.png">
   <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="/assets/splash/splash-750x1334.png">
   <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" href="/assets/splash/splash-1242x2208.png">
@@ -42,7 +42,6 @@
     <!-- ==================== AUTH SCREEN ==================== -->
     <div id="screen-auth" class="screen active">
       <div class="auth-shell">
-        <img class="auth-logo" src="/assets/icons/logo_caim.svg" alt="CAIM">
         <h1 class="auth-title">CAIM</h1>
         <p class="auth-subtitle">MVP Factory — gere e publique MVPs no GitHub Pages</p>
 
@@ -63,6 +62,7 @@
 
         <div id="auth-config-note" class="auth-note hidden"></div>
         <button id="auth-dev-btn" class="auth-dev hidden">Entrar em modo dev (teste)</button>
+        <a id="auth-back-home" class="auth-link" href="/">← Voltar à página inicial</a>
       </div>
     </div>
 
@@ -115,7 +115,6 @@
         <button class="ide-icon-btn" id="menu-btn" aria-label="Explorer">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
-        <img class="ide-logo" src="/assets/icons/icon-32.png" alt="CAIM">
         <span class="ide-title">CAIM</span>
       </div>
       <div class="ide-header-actions">

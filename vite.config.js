@@ -32,7 +32,6 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['assets/icons/favicon.ico'],
       manifest: {
         name: 'CAIM',
         short_name: 'CAIM',
