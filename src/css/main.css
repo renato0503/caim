@@ -258,16 +258,17 @@ button,
 }
 
 .ide-title {
-  font-family: var(--font-display);
-  font-size: 14px;
-  letter-spacing: normal;
-  color: var(--accent);
+  display: flex;
+  align-items: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 16px;
+  color: #2dd4bf;
   text-shadow:
-    2px 0 0 var(--accent-press),
-    -2px 0 0 var(--accent-press),
-    0 2px 0 var(--accent-press),
-    0 -2px 0 var(--accent-press),
-    4px 4px 0 var(--pixel-shadow);
+    2px 0 0 #14b8a6,
+    -2px 0 0 #14b8a6,
+    0 2px 0 #14b8a6,
+    0 -2px 0 #14b8a6,
+    4px 4px 0 #020617;
 }
 
 .ide-header .ide-icon-btn {

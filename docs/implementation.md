@@ -29,6 +29,17 @@
 
 ## Registro de Progresso (2026-08-15)
 
+### Sessão de 16/08 — S24–S30 (Fase 6/7 completas) + diagnóstico
+
+- **S24 — Deploy & IDE ✅:** `waitForPagesLive` (HEAD a cada 5s até 5min) antes do toast de sucesso; `setDeploying` (spinner + xp-bar no `#deploy-btn`, evita duplo clique); `exportProjectAsZip` (JSZip, VFS sem `.git`) no Git pane; `checkPendingPush` + badge ao voltar online.
+- **S25 — PWA & Offline ✅:** `requestStoragePersist()` no boot; `checkStoragePressure` (>90% aviso); badge offline no header (`online`/`offline`).
+- **S26 — Segurança ✅:** `renderPdfJs` (pdfjs-dist) para PDFs >1MB (canvas, não iframe); upload >10MB bloqueado; **rate limit dinâmico** no `gitCorsProxy` (owners 200 req/min vs 50) — deployado.
+- **S27 — Retrofit Fundação ✅:** tokens `--pixel-*`, `.pixel-border`, `.pixel-btn`, `.pixel-icon` (layout.md §2.1/§4.1/§11).
+- **S28 — Componentes Core ✅:** activity bar (menu RPG, `pulse-pixel`), bottom sheet (border-top accent, tabs pixel), editor CodeMirror 16-bit (`tok-*`), tabs pixel, explorer drawer (border-right accent).
+- **S29 — Interações & VFX ✅:** `notify.achievement` (toast dourado) + `notify.particles` (canvas) — acionados em deploy/aceitar diff; CSS `.ui-achievement`/`.ui-particles`.
+- **S30 — Polish ✅:** xp-bar de deploy no header; efeito CRT (duplo toque no logo); ícones pixel SVG em toda a plataforma.
+- **Diagnóstico final:** ver `docs/AUDIT.md` (análise completa) — 97 testes verdes, build limpo, deploy ao vivo verificado.
+
 ### Sessão de 16/08 — S20–S23 (Fase 6: correções da auditoria) concluídas
 
 - **S20 — Auth Resiliente (J1) ✅:** `sendPasswordReset` + link "Esqueci minha senha" no login; `sendEmailVerification` + badge "Email não verificado" no dashboard; `friendlyAuthError` centralizado com `user-token-expired`/`user-disabled`/`network-request-failed`.
@@ -200,13 +211,13 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 | S21 | Correção — APIs & Failover UX (J2)     | 6    | Validar chave, mensagens claras, editar chave    | ✅ Done |
 | S22 | Correção — Geração & Contexto (J3)     | 6    | Contexto 16KB, continue-truncation, custo        | ✅ Done |
 | S23 | Correção — Diff & Revisão (J4)         | 6    | Diff create/delete/rename, conflito de edição    | ✅ Done |
-| S24 | Correção — Deploy & IDE (J5/J6)        | 6    | Polling Pages, export ZIP, push pendente         | ⏳ Pending |
-| S25 | Correção — PWA & Offline (J7)          | 6    | Storage pressure, estado offline, eviction       | ⏳ Pending |
-| S26 | Correção — Segurança & Viewer (S18)    | 6    | pdf.js, tamanho VFS, rate limit dinâmico         | ⏳ Pending |
-| S27 | Retrofit 16-bit — Fundação (layout.md) | 7    | Fontes pixel, tokens CSS, `.pixel-border`/btn    | ⏳ Pending |
-| S28 | Retrofit 16-bit — Componentes Core     | 7    | Activity bar, bottom sheet, editor, explorer     | ⏳ Pending |
-| S29 | Retrofit 16-bit — Interações & VFX     | 7    | Partículas, microinterações, toasts, diff, chat  | ⏳ Pending |
-| S30 | Retrofit 16-bit — Polish & Go Live     | 7    | Ícones pixel, CRT, bundle, device real           | ⏳ Pending |
+| S24 | Correção — Deploy & IDE (J5/J6)        | 6    | Polling Pages, export ZIP, push pendente         | ✅ Done |
+| S25 | Correção — PWA & Offline (J7)          | 6    | Storage pressure, estado offline, eviction       | ✅ Done |
+| S26 | Correção — Segurança & Viewer (S18)    | 6    | pdf.js, tamanho VFS, rate limit dinâmico         | ✅ Done |
+| S27 | Retrofit 16-bit — Fundação (layout.md) | 7    | Fontes pixel, tokens CSS, `.pixel-border`/btn    | ✅ Done |
+| S28 | Retrofit 16-bit — Componentes Core     | 7    | Activity bar, bottom sheet, editor, explorer     | ✅ Done |
+| S29 | Retrofit 16-bit — Interações & VFX     | 7    | Partículas, microinterações, toasts, diff, chat  | ✅ Done |
+| S30 | Retrofit 16-bit — Polish & Go Live     | 7    | Ícones pixel, CRT, bundle, device real           | ✅ Done |
 
 ---
 
