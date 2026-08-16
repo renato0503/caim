@@ -15,6 +15,7 @@ vi.mock('../db/db-service.js', () => ({
 vi.mock('../security/security-service.js', () => ({
   security: {
     encrypt: vi.fn(),
+    encryptForUser: vi.fn(),
   },
 }));
 
@@ -81,7 +82,7 @@ describe('AuthViews — Settings (3 APIs cifradas)', () => {
   });
 
   it('chave digitada é cifrada antes de salvar (nunca texto puro)', async () => {
-    security.encrypt.mockResolvedValue(encrypted('ivN', 'ctN'));
+    security.encryptForUser.mockResolvedValue(encrypted('ivN', 'ctN'));
     dbService.getUserProfile.mockResolvedValue(null);
     const views = makeViews();
 
@@ -90,7 +91,7 @@ describe('AuthViews — Settings (3 APIs cifradas)', () => {
     keyInput.value = 'sk-plaintext';
 
     await views.saveSettings();
-    expect(security.encrypt).toHaveBeenCalledWith('sk-plaintext');
+    expect(security.encryptForUser).toHaveBeenCalledWith('u1', 'sk-plaintext');
     const saved = dbService.updateLlmKeys.mock.calls[0][1];
     expect(saved[0].key).toEqual(encrypted('ivN', 'ctN'));
     expect(JSON.stringify(saved)).not.toContain('sk-plaintext');

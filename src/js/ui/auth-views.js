@@ -3,7 +3,7 @@ import { dbService } from '../db/db-service.js';
 import { security } from '../security/security-service.js';
 import { agentManager } from '../agents/agent-manager.js';
 
-export const PROVIDER_LABELS = { deepseek: 'DeepSeek', qwen: 'Qwen', openai: 'OpenAI', nvidia: 'NVIDIA', opencode: 'OpenCode' };
+export const PROVIDER_LABELS = { deepseek: 'DeepSeek', qwen: 'Qwen', openai: 'OpenAI', nvidia: 'NVIDIA', groq: 'Groq', opencode: 'OpenCode' };
 
 export class AuthViews {
   constructor({ notify, onEnterIde }) {
@@ -234,64 +234,81 @@ export class AuthViews {
     }
   }
 
+  // Autodetecta o provider pelo prefixo da chave (S21 simplificado):
+  // nvapi- → NVIDIA · sk-aa → DeepSeek · sk- → OpenAI · demais → OpenCode (precisa baseUrl)
+  detectProvider(key) {
+    const k = (key || '').trim();
+    if (/^nvapi-/.test(k)) return 'nvidia';
+    if (/^gsk_/.test(k)) return 'groq';
+    if (/^sk-[a-f0-9]{20,}/.test(k)) return 'deepseek';
+    if (/^sk-/.test(k)) return 'openai';
+    if (/^github_pat_/.test(k)) return 'opencode';
+    return 'opencode';
+  }
+
   settingsRow(index, data) {
     const row = document.createElement('div');
     row.className = 'settings-row';
-    // S14: preserva a chave cifrada já salva no Firestore. Sem isso, reabrir
-    // Configurações e salvar sem redigitar a chave apagaria todas as chaves.
+    // S14: preserva a chave cifrada já salva no Firestore.
     row.__encrypted = data.key || null;
+    const provider = data.provider || 'deepseek';
+    row.__provider = provider; // provider original (fallback p/ chave cifrada já salva)
     row.innerHTML = `
       <div class="settings-row-head">
         <span class="settings-row-title">API ${index + 1}</span>
+        <span class="settings-provider" data-field="providerLabel">${PROVIDER_LABELS[provider] || provider}</span>
         <label class="settings-toggle">
-          <input type="checkbox" data-field="active" ${data.active ? 'checked' : ''}>
+          <input type="checkbox" data-field="active" ${data.active !== false ? 'checked' : ''}>
           <span>Ativa</span>
         </label>
       </div>
       <div class="settings-fields">
-        <select data-field="provider">
-          <option value="deepseek" ${data.provider === 'deepseek' ? 'selected' : ''}>DeepSeek</option>
-          <option value="qwen" ${data.provider === 'qwen' ? 'selected' : ''}>Qwen</option>
-          <option value="openai" ${data.provider === 'openai' ? 'selected' : ''}>OpenAI</option>
-          <option value="nvidia" ${data.provider === 'nvidia' ? 'selected' : ''}>NVIDIA</option>
-          <option value="opencode" ${data.provider === 'opencode' ? 'selected' : ''}>OpenCode</option>
-        </select>
-        <input data-field="baseUrl" placeholder="Base URL (opcional, ex: https://proxy/opencode/v1)" value="${escapeHtml(data.baseUrl || '')}">
-        <input data-field="model" placeholder="Modelo (opcional, ex: deepseek-chat)" value="${escapeHtml(data.model || '')}">
+        <input data-field="key" type="password" placeholder="Cole a API key aqui" value="" autocomplete="off">
+        <input data-field="baseUrl" placeholder="Base URL (só p/ OpenCode)" value="${escapeHtml(data.baseUrl || '')}" class="hidden">
+        <input data-field="model" type="hidden" value="${escapeHtml(data.model || '')}">
+        <input data-field="priority" type="hidden" value="${data.priority || index + 1}">
         <div class="settings-key-row">
-          <input data-field="key" type="password" placeholder="API key (será cifrada)" value="">
           <button class="dash-btn dash-btn-sm" data-act="test" type="button">Testar</button>
-        </div>
-        <div class="settings-row-foot">
-          <label>Prioridade</label>
-          <input data-field="priority" type="number" min="1" max="3" value="${data.priority || index + 1}">
         </div>
         <div class="settings-test-result" data-field="testResult"></div>
       </div>
     `;
+
+    const keyInput = row.querySelector('[data-field="key"]');
+    const baseUrlInput = row.querySelector('[data-field="baseUrl"]');
+    const labelEl = row.querySelector('[data-field="providerLabel"]');
+
+    // Autodetecta o provider ao colar/alterar a chave
+    const updateDetect = () => {
+      const p = this.detectProvider(keyInput.value);
+      labelEl.textContent = PROVIDER_LABELS[p] || p;
+      baseUrlInput.classList.toggle('hidden', p !== 'opencode');
+      row.__detectedProvider = p;
+    };
+    keyInput.addEventListener('input', updateDetect);
+    keyInput.addEventListener('paste', () => setTimeout(updateDetect, 0));
+    updateDetect();
+
     // S21: valida a chave com um prompt mínimo antes de salvar
     row.querySelector('[data-act="test"]').addEventListener('click', async () => {
-      const read = (f) => row.querySelector(`[data-field="${f}"]`).value;
-      const provider = read('provider');
-      const baseUrl = read('baseUrl').trim();
-      const model = read('model').trim();
-      const plainKey = read('key').trim();
+      const plainKey = keyInput.value.trim();
       const resultEl = row.querySelector('[data-field="testResult"]');
-      let key = row.__encrypted || null;
-      if (plainKey) {
-        key = await security.encrypt(plainKey);
-      }
-      if (!key) {
-        resultEl.textContent = 'Digite a chave para testar.';
+      if (!plainKey && !row.__encrypted) {
+        resultEl.textContent = 'Cole a chave para testar.';
         resultEl.className = 'settings-test-result';
         return;
       }
+      // chave não redigitada → usa o provider original salvo
+      const provider = plainKey ? row.__detectedProvider : (row.__provider || 'deepseek');
+      const baseUrl = baseUrlInput.value.trim();
+      let key = row.__encrypted || null;
+      if (plainKey) key = await this.encryptKey(plainKey);
       const btn = row.querySelector('[data-act="test"]');
       const prevText = btn.textContent;
       btn.disabled = true;
       btn.textContent = 'Testando…';
       try {
-        const res = await agentManager.testConnection({ provider, key, baseUrl, model });
+        const res = await agentManager.testConnection({ provider, key, baseUrl, model: '' }, this.user?.uid);
         resultEl.textContent = res.ok ? 'Chave válida ✓' : `Falha: ${res.error}`;
         resultEl.className = 'settings-test-result ' + (res.ok ? 'ok' : 'fail');
       } finally {
@@ -302,20 +319,27 @@ export class AuthViews {
     return row;
   }
 
+  // Cifra uma chave LLM usando a chave derivada do usuário (compatível com o
+  // Admin SDK). Sem usuário (modo dev), usa a master key local.
+  async encryptKey(plainKey) {
+    if (this.user?.uid) return security.encryptForUser(this.user.uid, plainKey);
+    return security.encrypt(plainKey);
+  }
+
   async saveSettings() {
     const rows = [...document.querySelectorAll('#settings-list .settings-row')];
     const keys = [];
     for (const row of rows) {
       const read = (f) => row.querySelector(`[data-field="${f}"]`).value;
-      const provider = read('provider');
+      const plainKey = read('key').trim();
+      const provider = plainKey ? (row.__detectedProvider || 'deepseek') : (row.__provider || read('provider') || 'deepseek');
       const baseUrl = read('baseUrl').trim();
       const model = read('model').trim();
-      const plainKey = read('key').trim();
       const priority = Number(read('priority')) || 99;
       const active = row.querySelector('[data-field="active"]').checked;
       let encrypted = row.__encrypted || null;
       if (plainKey) {
-        encrypted = await security.encrypt(plainKey);
+        encrypted = await this.encryptKey(plainKey);
         row.__encrypted = encrypted;
       }
       if (encrypted) {

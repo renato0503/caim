@@ -8,7 +8,7 @@ vi.mock('../db/db-service.js', () => ({
 }));
 
 vi.mock('../security/security-service.js', () => ({
-  security: { decrypt: vi.fn() },
+  security: { decrypt: vi.fn(), decryptForUser: vi.fn(), encryptForUser: vi.fn() },
 }));
 
 import { dbService } from '../db/db-service.js';
@@ -56,6 +56,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   agentManager.mode = AGENT_MODE.LIVE;
   security.decrypt.mockResolvedValue('sk-mock');
+  security.decryptForUser.mockResolvedValue('sk-mock');
 });
 
 describe('AgentManager — failover e chaves (S8/S14)', () => {
@@ -193,7 +194,7 @@ describe('AgentManager — failover e chaves (S8/S14)', () => {
     const profile = await dbService.getUserProfile('u1');
     expect(profile.llm_keys[0].key.ciphertext).not.toContain('sk-');
     await agentManager.sendPrompt({ text: 'x', uid: 'u1' });
-    expect(security.decrypt).toHaveBeenCalledWith(profile.llm_keys[0].key);
+    expect(security.decryptForUser).toHaveBeenCalledWith('u1', profile.llm_keys[0].key);
   });
 });
 

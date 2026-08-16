@@ -12,6 +12,13 @@ export class SecurityService {
     this.db = new Dexie('caim-secrets');
     this.db.version(1).stores({ secrets: '&key, value' });
     this.masterKeyPromise = this.init();
+    this.userKeyCache = new Map();
+  }
+
+  // Salt compartilhado com o backend (Admin SDK) para derivar a chave
+  // das LLM keys por usuário — o texto puro nunca é gravado no Firestore.
+  static get LLM_SALT() {
+    return 'caim-llm-v1::';
   }
 
   async init() {
@@ -23,6 +30,31 @@ export class SecurityService {
     const jwk = await crypto.subtle.exportKey('jwk', key);
     await this.db.secrets.put({ key: 'masterKey', value: { jwk } });
     return key;
+  }
+
+  // Deriva uma chave AES-GCM determinística a partir do UID do usuário.
+  // Usada para cifrar llm_keys de forma compatível com o Admin SDK.
+  async deriveUserKey(uid) {
+    if (!uid) return null;
+    if (this.userKeyCache.has(uid)) return this.userKeyCache.get(uid);
+    const data = new TextEncoder().encode(SecurityService.LLM_SALT + uid);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    const key = await crypto.subtle.importKey('raw', hash, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+    this.userKeyCache.set(uid, key);
+    return key;
+  }
+
+  async encryptForUser(uid, plaintext) {
+    const key = await this.deriveUserKey(uid);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(plaintext));
+    return { iv: bytesToBase64(iv), ciphertext: bytesToBase64(new Uint8Array(ciphertext)) };
+  }
+
+  async decryptForUser(uid, { iv, ciphertext }) {
+    const key = await this.deriveUserKey(uid);
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: base64ToBytes(iv) }, key, base64ToBytes(ciphertext));
+    return new TextDecoder().decode(plain);
   }
 
   async encrypt(plaintext) {

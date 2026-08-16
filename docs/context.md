@@ -24,16 +24,19 @@
 | **Viewer (S3.5)**   | ✅ Concluído                    | Preview md/img/html/pdf/csv/docx/xlsx/pptx no pane `preview`. |
 | **Diff (S5)**       | ✅ Concluído                    | Diffs por bloco no bottom sheet (aceitar/rejeitar). |
 | **Agentes (S6/S7/S8)** | ✅ Concluído                | Drivers (JSON/XML) + Tool Executor + failover multi-API + streaming/thinking/abort + contexto. |
-| **SaaS (auth-gate)** | ✅ Em produção                | Login/cadastro obrigatórios, dashboard de MVPs, Settings 3 APIs cifradas, deploy via CF `githubDeployProxy` (PAT do Owner no Secret Manager). |
+| **SaaS (auth-gate)** | ✅ Em produção                | Login/cadastro obrigatórios, dashboard de MVPs, **Settings simplificado (cole a chave → provider autodetectado por prefixo)** com 6 providers (deepseek/qwen/openai/nvidia/groq/opencode), deploy via CF `githubDeployProxy` (PAT do Owner no Secret Manager). |
 | **Deploy**          | ✅ Live                        | **https://caim.web.app** (landing) · **https://caim.web.app/app** (IDE) · Functions `githubDeployProxy` + `gitCorsProxy`. |
 | **Firebase config** | ✅ Real                        | `projectId: cerraimobile` · Blaze · Auth + Firestore (usuário `gestor.renatorosa@gmail.com`). |
 | **Performance (S10)** | ✅ Core ~156KB gzip        | Framework7 removido (mini-UI `notify.js`), CodeMirror minimal, code-splitting nativo. CSS 5,6KB. Lazy: xlsx/mammoth/isomorphic-git/firebase. |
-| **Testes (Vitest)** | ✅ 79 verdes (16/08)      | `fake-indexeddb` + `vitest.config.js` + `jsdom`. Cobre: VFS (CRUD/path/persistência/eventos), EventEmitter, SecurityService (AES-GCM), Drivers (JSON/XML + truncamento), Tool Executor (path traversal), **Git offline**, **Failover multi-API (401/429/prioridade)**, **Settings 3 APIs cifradas**, **streaming/thinking/abort/contexto**, **Diff blocks (aceitar/rejeitar/minified)**, **Explorer (file-tree)**, **Viewer XSS (markdown/csv/html/xlsx/docx)**. |
+| **Testes (Vitest)** | ✅ 99 verdes (16/08)      | `fake-indexeddb` + `vitest.config.js` + `jsdom`. Cobre: VFS (CRUD/path/persistência/eventos), EventEmitter, SecurityService (AES-GCM + derivação por UID), Drivers (JSON/XML + truncamento), Tool Executor (path traversal), **Git offline**, **Failover multi-API (401/429/prioridade)**, **Settings 3 APIs cifradas**, **streaming/thinking/abort/contexto**, **Diff blocks (aceitar/rejeitar/minified)**, **Explorer (file-tree)**, **Viewer XSS (markdown/csv/html/xlsx/docx)**. |
 | **Hardening (16/08)** | ✅ Aplicado              | `gitCorsProxy` com host-allowlist GitHub + rate limit 50 req/min por usuário/IP · parser dos drivers tolerante a **truncamento** (S15) · `syncViewport` com throttle `requestAnimationFrame` (jitter do teclado iOS) · **CSP/security headers no Hosting (ao vivo)** · **XSS no viewer (DOMPurify em xlsx/docx/markdown)** · **gitFs com stat por hash de conteúdo**. |
 | **Git**             | ✅ Commitado/pushado           | `main` no `github.com/renato0503/caim`. **S13–S19 automático commitado** · Functions + Hosting redeployados (16/08). |
-| **Pendências**      | 🔄 **device real ⏳** (PWA iPhone, cadastro/login reais, `seed-admin`, `GITHUB_OWNER_PAT`, chaves LLM reais, regras Firestore 2 contas, Lighthouse ≥ 90, modo avião, iPhones), **App Check** (`appCheckSiteKey`), **Node 20 → 22 nas Functions** (decomissiona 2026-10-30), README de instalação, **Fase 6 (S20–S26)** correções da auditoria, **Fase 7 (S27–S30)** Retrofit 16-bit (`docs/layout.md`) | |
+| **Admin SDK (owner)** | ✅ Ativo (16/08)          | Service account `firebase-adminsdk-fbsvc@cerraimobile` guardado **fora do repo** (`C:\Users\Renato\AppData\Local\Temp\opencode\caim-service-account\service-account.json`, restrito) — usado p/ gravar **llm_keys do owner diretamente no Firestore** cifradas com a chave derivada do UID (`seed-llm-keys.cjs`). *Nunca commitar o JSON nem as chaves LLM.* |
+| **Chaves LLM (owner)** | ✅ Gravadas (16/08)     | 5 entradas em `users/O4iLGZdl0DYVJfcROrcZI6eFTdA3/llm_keys` cifradas com `deriveUserKey(uid)`: **Groq** (llama-3.3-70b-versatile) ✅ **200 OK** · **OpenCode Zen** (`https://opencode.ai/zen/v1` + nemotron-3.5-lightning-free) ✅ **200 OK** · **NVIDIA** (meta/llama-3.1-8b-instruct) ✅ **200 OK** + NVIDIA antiga (timeout, modelo 3.3) · **DeepSeek** ❌ **402 saldo zerado**. |
+| **Criptografia LLM keys** | ✅ Novo modelo (16/08)   | `security-service.js`: além da master key local (PATs), **chave determinística por UID** (`deriveUserKey` = SHA-256(`caim-llm-v1::` + uid) → AES-GCM 256) — **compatível Admin SDK ↔ app** (`encryptForUser`/`decryptForUser`). `saveSettings`/botão Testar usam `encryptKey()`; `agent-manager.decryptKey(uid, entry)` decifra com uid quando logado. |
+| **Pendências**      | 🔄 **device real ⏳** (PWA iPhone, cadastro/login reais, regras Firestore 2 contas, Lighthouse ≥ 90, modo avião, iPhones), **testar chaves gravadas** (DeepSeek 402 saldo, NVIDIA timeout, OpenCode sem baseUrl), **App Check** (`appCheckSiteKey`), **Node 20 → 22 nas Functions** (decomissiona 2026-10-30), README de instalação | |
 
-> **Próximo passo:** **Fase 7 (S27–S30)** — Retrofit 16-bit conforme `docs/layout.md` (fontes pixel, activity bar, bottom sheet, editor, explorer, partículas, toasts, diff, chat) + **Fase 6 (S20–S26)** correções da auditoria + **homologação final em device real** (PWA iPhone, cadastro/login, `seed-admin`, `GITHUB_OWNER_PAT`, chaves reais, 2 contas, Lighthouse ≥ 90). Depois o README de instalação e Go Live oficial.
+> **Próximo passo:** **homologação final em device real** (PWA iPhone, cadastro/login, regras 2 contas, Lighthouse ≥ 90) + **testar no app real** (Groq/OpenCode/NVIDIA ok — DeepSeek requer saldo) + **App Check** + upgrade das Functions para Node 22. Depois o README de instalação e Go Live oficial.
 
 ---
 
@@ -112,9 +115,9 @@ CAIM is a 100% mobile-first, web-based IDE and AI coding agent interface designe
 | **Editor Engine**   | CodeMirror 6                          | Modular architecture, mobile touch support, dynamic syntax highlighting, toolbar flutuante iOS. ✅ (S4) |
 | **File Viewer**     | `marked` + `DOMPurify` + `mammoth` + `xlsx` + `jszip` | Preview de md/img/html/pdf/csv/docx/xlsx/pptx com lazy-load e sanitização XSS. ✅ (S3.5/S18) |
 | **Version Control** | `isomorphic-git` + VFS adapter (`vfs-fs.js`) | Git offline (init/add/commit/log) + push via `gitCorsProxy`. ✅ (S2) |
-| **Security**        | Web Crypto API                        | AES-GCM encryption for storing GitHub PATs and LLM API keys locally. ✅ (S2)       |
+| **Security**        | Web Crypto API                        | AES-GCM para PATs (master key local IndexedDB) e **llm_keys com chave determinística por UID** (compatível Admin SDK ↔ app). ✅ (S2/16-08) |
 | **Icons**           | Lucide Icons (SVG inline)             | Lightweight, scalable SVG integration.                                             |
-| **Testing**         | Vitest + jsdom + `fake-indexeddb`     | **79 testes verdes**; E2E (Playwright) planejado. |
+| **Testing**         | Vitest + jsdom + `fake-indexeddb`     | **99 testes verdes**; E2E (Playwright) planejado. |
 
 ---
 

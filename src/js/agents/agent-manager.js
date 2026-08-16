@@ -13,6 +13,7 @@ const PROVIDERS = {
   qwen: { url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
   openai: { url: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
   nvidia: { url: 'https://integrate.api.nvidia.com/v1', model: 'meta/llama-3.3-70b-instruct' },
+  groq: { url: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
   opencode: { url: '', model: 'default' }, // proxy OpenAI-compatible — preencher baseUrl no Settings
 };
 
@@ -134,7 +135,7 @@ class AgentManager {
       // provider sem URL padrão (ex.: opencode) exige baseUrl no Settings
       if ((!cfg || !cfg.url) && !entry.baseUrl) continue;
       try {
-        return await this.liveSend(text, entry, cfg, { onChunk, onThinking, signal });
+        return await this.liveSend(text, entry, cfg, { uid, onChunk, onThinking, signal });
       } catch (err) {
         if (err?.name === 'AbortError' && signal?.aborted) throw err; // usuário parou
         errors.push(`${entry.provider}: ${err.message}`);
@@ -166,8 +167,15 @@ class AgentManager {
     return `${provider}: erro HTTP ${status}`;
   }
 
-  async liveSend(text, entry, cfg, { onChunk, onThinking, signal }) {
-    const apiKey = await security.decrypt(entry.key);
+  // Decifra a chave de um entry LLM. Com uid, usa a chave derivada do usuário
+  // (compatível com o Admin SDK); sem uid, usa a master key local.
+  async decryptKey(uid, entry) {
+    if (uid) return security.decryptForUser(uid, entry.key);
+    return security.decrypt(entry.key);
+  }
+
+  async liveSend(text, entry, cfg, { uid, onChunk, onThinking, signal }) {
+    const apiKey = await this.decryptKey(uid, entry);
     const baseUrl = (entry.baseUrl || cfg.url).replace(/\/+$/, '');
     const url = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
     const controller = new AbortController();
@@ -234,11 +242,11 @@ class AgentManager {
    * S21: valida uma chave LLM com um prompt mínimo antes de salvar no Settings.
    * Retorna { ok, error } — não lança (usado no botão "Testar" da UI).
    */
-  async testConnection(entry) {
+  async testConnection(entry, uid) {
     const cfg = PROVIDERS[entry.provider];
     if (!cfg && !entry.baseUrl) return { ok: false, error: 'Provider desconhecido' };
     try {
-      const apiKey = await security.decrypt(entry.key);
+      const apiKey = await this.decryptKey(uid, entry);
       const baseUrl = (entry.baseUrl || cfg.url).replace(/\/+$/, '');
       const url = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
       const controller = new AbortController();
