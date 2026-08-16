@@ -1,6 +1,6 @@
 # CAIM — Jornada do Cliente (MVP Factory)
 
-> Mapeamento completo dos fluxos na perspectiva do cliente. As **sprints de homologação (S13–S19)** que testam cada fluxo estão em `implementation.md` (Fase 5).
+> Mapeamento completo dos fluxos na perspectiva do cliente. As **sprints de homologação (S13–S19)** que testam cada fluxo estão em `../implementation.md` (Fase 5).
 > Legenda: ✅ implementado · 🔒 depende de ação do Owner (secret/seed) · 🔮 futuro
 
 ---
@@ -183,6 +183,8 @@ flowchart TD
 | J6 | Uso da IDE                  | explorer/editor/viewer/git          | S16    | 🧪 `file-tree` + `viewer` + `git-service` |
 | J7 | Offline & PWA               | modo avião, bundle, atualização     | S17    | bundle 156KB gzip + SW precache verificados |
 | -  | Segurança & Go Live         | App Check, Lighthouse, iPhones      | S18–S19 | 🧪 viewer XSS + path traversal + CSP/headers ao vivo · ⏳ device real |
-| -  | Correções (auditoria)       | auth, APIs, geração, diff, deploy, offline, segurança | S20–S26 | ⏳ planejado (Fase 6) — ver `implementation.md` |
+| -  | Correções (auditoria)       | auth, APIs, geração, diff, deploy, offline, segurança | S20–S26 | ⏳ planejado (Fase 6) — ver `../implementation.md` |
 
-> **Fase 6 (S20–S26):** correções da auditoria cruzada `journey.md` × `workflows.md` executada em 16/08/2026 — gaps de produção em auth (senha/email/token), APIs (validação/failover UX), geração (contexto 16KB/continue-truncation), diff (create/delete/rename), deploy (polling Pages/export ZIP/push pendente), offline (storage pressure) e segurança (pdf.js/rate limit dinâmico). Detalhes em `implementation.md`.
+> **Fase 6 (S20–S26):** correções da auditoria cruzada `journey.md` × `workflows.md` executada em 16/08/2026 — gaps de produção em auth (senha/email/token), APIs (validação/failover UX), geração (contexto 16KB/continue-truncation), diff (create/delete/rename), deploy (polling Pages/export ZIP/push pendente), offline (storage pressure) e segurança (pdf.js/rate limit dinâmico). Detalhes em `../implementation.md`.
+>
+> **Fase 7 (S27–S30):** **Retrofit 16-bit** conforme `../layout.md` — estética retro gamificada (fontes pixel, activity bar menu RPG, bottom sheet dialog box, editor CodeMirror 16-bit, explorer inventário, partículas, toasts de conquista, diff batalha, chat terminal, ícones pixel). Visual, não bloqueia o Go Live.

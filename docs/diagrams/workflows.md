@@ -2,7 +2,7 @@
 
 > Diagramas dos fluxos de usuário do CAIM. Nomes reais de funções/componentes do código.
 > Legenda: ✅ implementado · 🧪 coberto por teste automatizado (Vitest) · ⏳ manual/device real.
-> **Sprint de homologação de cada workflow:** `docs/diagrams/journey.md` (J1–J7) e `implementation.md` (S13–S19).
+> **Sprint de homologação de cada workflow:** `../diagrams/journey.md` (J1–J7) e `../implementation.md` (S13–S19).
 
 ---
 

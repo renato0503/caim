@@ -63,7 +63,11 @@
 
 ## Docs (`docs/`)
 
-- `docs/diagrams/workflows.md` — Workflows de usuário em **Mermaid.js** (ciclo do agente, navegação, preview, git).
+- `implementation.md` — Plano mestre de sprints (S0–S30) + registro de progresso.
+- `context.md` — Contexto, arquitetura, stack e status.
+- `layout.md` — Arquitetura de Layout 16-bit (design system retro gamificado) — aprovada para a Fase 7.
+- `diagrams/workflows.md` — Workflows de usuário em **Mermaid.js** (ciclo do agente, navegação, preview, git).
+- `diagrams/journey.md` — Jornada do cliente (J0–J7) + matriz de homologação.
 
 ## Build Output (`public/`)
 
@@ -73,11 +77,13 @@
 ## Roadmap (pendências)
 
 1. **S13–S19 — homologação ✅ automática** (testes + hardening + deploy final 16/08); **device real ⏳**: PWA install, cadastro/login, `seed-admin`, `GITHUB_OWNER_PAT`, chaves LLM, regras com 2 contas, Lighthouse ≥ 90, modo avião, 2 iPhones.
-2. **S11 🔄** — ativar App Check (`appCheckSiteKey`), auditoria memória (S18).
-3. **Node 20 → 22 nas Functions** (runtime deprecado — decomissiona 2026-10-30).
-4. **README de instalação** + captura da jornada (S19).
-5. **Postergadas** — KiloDriver, conflitos de merge, virtualização da árvore, swipe de gestos.
-6. **Roadmap pós-Go-Live** — chaves LLM só-locais (opção), Cloud Sync (RxDB) multi-device, colaboração (ver `context.md` §12).
+2. **S20–S26 (Fase 6) 🔄** — correções da auditoria (auth resiliente, APIs, geração/contexto, diff, deploy, offline, segurança).
+3. **S27–S30 (Fase 7) 🔄** — **Retrofit 16-bit** conforme `layout.md` (fontes pixel, components core, interações/VFX, polish). Visual, não bloqueia Go Live.
+4. **S11 🔄** — ativar App Check (`appCheckSiteKey`), auditoria memória (S18).
+5. **Node 20 → 22 nas Functions** (runtime deprecado — decomissiona 2026-10-30).
+6. **README de instalação** + captura da jornada (S19).
+7. **Postergadas** — KiloDriver, conflitos de merge, virtualização da árvore, swipe de gestos.
+8. **Roadmap pós-Go-Live** — chaves LLM só-locais (opção), Cloud Sync (RxDB) multi-device, colaboração (ver `context.md` §12).
 
 ## Planned Architecture (alvo)
 

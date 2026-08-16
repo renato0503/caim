@@ -17,16 +17,27 @@
 7. [Fase 4 — Integração, Hardening & Deploy (Step 5)](#fase-4--integração-hardening--deploy-step-5)
 8. [Fase 5 — Homologação Ponta-a-Ponta (S13–S19)](#fase-5--homologação-ponta-a-ponta-s13s19)
 9. [Fase 6 — Correções da Auditoria (S20–S26)](#fase-6--correções-da-auditoria-s20s26)
-10. [Dependências entre Sprints](#dependências-entre-sprints)
-11. [Estratégia de Testes](#estratégia-de-testes)
-12. [Estrutura de Pastas Alvo](#estrutura-de-pastas-alvo)
-13. [Matriz de Riscos & Mitigação](#matriz-de-riscos--mitigação)
-14. [Critérios de Go Live](#critérios-de-go-live)
-15. [Pós-Go-Live & Rollback](#pós-go-live--rollback)
+10. [Fase 7 — Retrofit 16-bit (S27–S30)](#fase-7--retrofit-16-bit-s27s30)
+11. [Dependências entre Sprints](#dependências-entre-sprints)
+12. [Estratégia de Testes](#estratégia-de-testes)
+13. [Estrutura de Pastas Alvo](#estrutura-de-pastas-alvo)
+14. [Matriz de Riscos & Mitigação](#matriz-de-riscos--mitigação)
+15. [Critérios de Go Live](#critérios-de-go-live)
+16. [Pós-Go-Live & Rollback](#pós-go-live--rollback)
 
 ---
 
 ## Registro de Progresso (2026-08-15)
+
+### Sessão de 16/08 — Docs reorganizados + Fase 7 (S27–S30) Retrofit 16-bit
+
+- **Docs movidos para `docs/`:** `implementation.md`, `context.md` e `PROJECT_STRUCTURE.md` saíram da raiz para `docs/` (organização); caminhos relativos corrigidos em todos os `.md` (referências `docs/diagrams/...` → `diagrams/...` e `implementation.md` → `../implementation.md` nos diagramas).
+- **Novo `docs/layout.md`** (design system 16-bit aprovado) → **Fase 7 (S27–S30):**
+  - **S27** — Fundação: fontes pixel (Press Start 2P/VT323/Silkscreen), tokens `--pixel-*`, CSS reset, `.pixel-border`/`.pixel-btn`.
+  - **S28** — Componentes core: activity bar (menu RPG), bottom sheet (dialog box), editor CodeMirror 16-bit + tabs, explorer (inventário).
+  - **S29** — Interações: partículas, toasts de conquista, microinterações (rocket/save-flash/streaming-cursor), diff (batalha), chat (terminal).
+  - **S30** — Polish: ícones pixel SVG, efeito CRT, xp-bar, bundle < 15KB CSS, device real.
+- **Natureza:** sprints visuais — não dependem das correções de negócio (Fase 6) nem bloqueiam o Go Live.
 
 ### Sessão de 16/08 — Auditoria cruzada J0–J7 × Workflows → Fase 6 (S20–S26)
 
@@ -125,7 +136,7 @@
 - **S9 ✅ parcial** — GitPanel "Publicar MVP" agora roteado pela CF `githubDeployProxy` (PAT do Owner no Secret Manager); botão **"Novo projeto"** (`resetWorkspace` limpa VFS+abas). `deployProject` retorna a URL.
 - **S11 ✅ parcial** — Stub de **Firebase App Check** (ativa só com `appCheckSiteKey`); `aria-label` nos inputs de auth; XSS já mitigado (DOMPurify + iframe sandbox).
 - **S12 ✅ parcial** — Lighthouse rodado: **Performance 72 · Best Practices 100 · FCP 1,9s · LCP 6,6s**; trocado o logo 483KB→icon-192 (15KB) no auth e icon-32 no header p/ reduzir LCP.
-- **Jornada do Cliente** — `docs/diagrams/journey.md` com J0–J7 (auth, APIs, geração, diff, deploy, IDE, offline) + **Fase 5: sprints de homologação S13–S19** testando cada workflow na ordem cronológica.
+- **Jornada do Cliente** — `diagrams/journey.md` com J0–J7 (auth, APIs, geração, diff, deploy, IDE, offline) + **Fase 5: sprints de homologação S13–S19** testando cada workflow na ordem cronológica.
 
 ---
 
@@ -175,6 +186,10 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 | S24 | Correção — Deploy & IDE (J5/J6)        | 6    | Polling Pages, export ZIP, push pendente         | ⏳ Pending |
 | S25 | Correção — PWA & Offline (J7)          | 6    | Storage pressure, estado offline, eviction       | ⏳ Pending |
 | S26 | Correção — Segurança & Viewer (S18)    | 6    | pdf.js, tamanho VFS, rate limit dinâmico         | ⏳ Pending |
+| S27 | Retrofit 16-bit — Fundação (layout.md) | 7    | Fontes pixel, tokens CSS, `.pixel-border`/btn    | ⏳ Pending |
+| S28 | Retrofit 16-bit — Componentes Core     | 7    | Activity bar, bottom sheet, editor, explorer     | ⏳ Pending |
+| S29 | Retrofit 16-bit — Interações & VFX     | 7    | Partículas, microinterações, toasts, diff, chat  | ⏳ Pending |
+| S30 | Retrofit 16-bit — Polish & Go Live     | 7    | Ícones pixel, CRT, bundle, device real           | ⏳ Pending |
 
 ---
 
@@ -460,7 +475,7 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 ## Fase 5 — Homologação Ponta-a-Ponta (S13–S19)
 
-> Fluxos mapeados na **jornada do cliente** em `docs/diagrams/journey.md` (J1–J7). Cada sprint de homologação testa um grupo de workflows **na ordem cronológica das sprints já entregues** (S0→S12). Sprint só é "done" com todos os cenários verdes em **device real + modo avião**.
+> Fluxos mapeados na **jornada do cliente** em `diagrams/journey.md` (J1–J7). Cada sprint de homologação testa um grupo de workflows **na ordem cronológica das sprints já entregues** (S0→S12). Sprint só é "done" com todos os cenários verdes em **device real + modo avião**.
 
 ### S13 — Homologação da Fundação & Auth (J1)
 
@@ -633,6 +648,62 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 ---
 
+## Fase 7 — Retrofit 16-bit (S27–S30)
+
+> Design system aprovado em **`docs/layout.md`** (2026-08-16): estética **Retro-Futurismo 16-bit** — a identidade atual (#0f172a Dark Slate + #2dd4bf Teal/Cyan) mantida, expandida com paleta SNES/Genesis e componentes gamificados. Implementação **faseada** conforme Seção 8.1 do `layout.md`. **Regras globais:** pixel perfeito (múltiplos de 4px), animações só `transform`/`opacity`, fontes fora do caminho crítico, contraste WCAG AA, testes junto do código.
+
+### S27 — Retrofit 16-bit: Fundação (layout.md §3, §11.1, §2.1) 🟠 ALTO
+
+**Cobre:** `index.html` · `main.css` · `vite.config.js` (SW/fonts).
+
+- [ ] **Fontes pixeladas:** carregar `Press Start 2P`, `VT323` e `Silkscreen` fora do caminho crítico (preconnect + stylesheet assíncrono em `app.js`, como já feito para Press Start 2P); fallback `system-ui` sem flicker.
+- [ ] **Tokens CSS 16-bit:** variáveis `--pixel-*` (success/warning/danger/info/purple/gold/border/shadow/grid) no `:root` + regras de aplicação (cards `--bg-secondary` + borda pixel 2px; botões primários accent; hover `brightness(1.15)`; press `translateY(2px)`).
+- [ ] **CSS Reset 16-bit:** `box-sizing: border-box`, `image-rendering: pixelated` em ícones/imagens, `-webkit-font-smoothing: none`, `user-select` correto (UI bloqueado, editor/chat texto).
+- [ ] **Utilities:** `.pixel-border` (box-shadow inset), `.pixel-btn` + variantes (primary/danger/success/ghost/deploy), `.pixel-icon` (16/24/32/48px com `shape-rendering: crispEdges`).
+- [ ] **Bundle/performance:** garantir que as 3 fontes não inflam o caminho crítico (lazy) e que o CSS fique < 15KB gzip alvo do layout.md.
+
+**Critérios de Aceite:** fontes pixeladas ativas em Display/Body/Label; paleta 16-bit disponível; utilitários reutilizáveis; sem regressão de LCP/FCP; testes verdes.
+
+### S28 — Retrofit 16-bit: Componentes Core (layout.md §4.2–4.5) 🟠 ALTO
+
+**Cobre:** `main.css` · `index.html` · `app.js` (classes preservadas).
+
+- [ ] **Activity Bar (menu de RPG):** 48px, `--bg-secondary` + borda direita pixel, botões 40px com pixel border (inset), hover `translateY(-2px)`, active `translateY(2px)`, `pulse-pixel` no item ativo.
+- [ ] **Bottom Sheet (caixa de diálogo):** `border-top: 4px solid accent`, handle estilo "puxador RPG" (com `::before/::after`), tabs pixel (`--font-pixel` uppercase), scrollbar pixelada (track/thumb).
+- [ ] **Editor (tema CodeMirror 16-bit):** `--font-code` no `.cm-editor`, gutters `--font-pixel`, activeLine/seleção teal, **syntax highlighting 16-bit** (`.tok-*`: keyword roxo, string verde, number ouro, function azul, typeName laranja).
+- [ ] **Editor tabs:** `--font-pixel`, `border-right` pixel, tab ativa com `border-bottom` accent, dirty com `●` `--pixel-warning`.
+- [ ] **Explorer Drawer (inventário):** `border-right: 4px solid accent`, header pixel, `.tree-item` com `--font-pixel` e marcadores `▶/▼/◆` (pasta aberta/fechada/arquivo), botão 👁 com hover.
+- [ ] **Regressão:** verificar que as classes reais do DOM batem com as do layout.md (`activity-bar`/`.ab-item`, `bottom-sheet`/`.sheet-*`, `editor-tabs`/`editor-tab`, `file-tree`/`tree-item` — mapear e renomear se preciso).
+
+**Critérios de Aceite:** 4 componentes refatorados visualmente; nenhuma funcionalidade quebrada (drawer/sheet/editor intactos); testes de UI/regressão verdes.
+
+### S29 — Retrofit 16-bit: Interações & VFX (layout.md §4.7–4.9, §5.1–5.2) 🟠 ALTO
+
+**Cobre:** `main.css` · `ui/notify.js` (toasts) · `ui/diff-viewer.js` · chat UI.
+
+- [ ] **Sistema de partículas** (`particle-system.js`): canvas 2D overlay (pointer-events none), `emit(x, y, type)` com paletas confetti/success/error/deploy — chamado em: deploy, commit, aceitar/rejeitar diff, salvamento.
+- [ ] **Toasts de conquista:** `.pixel-toast` (gold border, slide-in + rotate) com título/mensagem; variantes success/error — integrar ao `notify.js` como `notify.achievement({title, message, xp, icon})`.
+- [ ] **Microinterações:** deploy `:active::after` foguete (`rocket-launch`), save flash (`editor-save-flash`), streaming cursor (`chat-bubble.streaming` com `blink-cursor`), achievement bounce.
+- [ ] **Diff Viewer (tela de batalha):** `.diff-block` com border pixel, header pixel, linhas added/removed (verde/vermelho com `line-through`), `.diff-actions` com botões aceitar/rejeitar pixel.
+- [ ] **Chat (terminal RPG):** bubbles pixel (`chat-bubble` com box-shadow inset), user à direita (accent), AI à esquerda (tertiary), thinking dots animados, input pixel.
+
+**Critérios de Aceite:** partículas leves (canvas único, sem thrasher); toasts com borda gold; diff/chat legíveis (contraste AA); animações só transform/opacity; testes verdes.
+
+### S30 — Retrofit 16-bit: Polish & Go Live (layout.md §6, §5.3, §8.2–8.4) 🟡 MÉDIO
+
+**Cobre:** ícones SVG · `main.css` · bundle · device real.
+
+- [ ] **Ícones pixel art:** substituir os SVGs Lucide por versões 16-bit do `layout.md` §6.2 (Explorer=baú, Chat=speech bubble, Settings=engrenagem, Deploy=foguete, Preview=olho, Menu=3 pixels, Aceitar=check, Rejeitar=X) com `shape-rendering: crispEdges`.
+- [ ] **Efeito CRT opcional:** toggle em Settings (`body.crt-effect` com scanlines + vignette) — off por padrão.
+- [ ] **Barra de progresso XP/deploy:** `.xp-bar` + `.xp-bar-fill` com shine (deploy/polling de Pages).
+- [ ] **Mockups validados:** conferir contra §9 (header com ícones, status bar "LV.42 · 1337 XP", sheet tabs [💬][⚔][👁][🎮]).
+- [ ] **Otimização de bundle:** remover fontes não usadas, lazy-load Lottie/partículas se necessário; CSS < 15KB gzip.
+- [ ] **Device real:** testar fontes/partículas/animações no iPhone (Safari, safe-areas, teclado flutuante, performance).
+
+**Critérios de Aceite:** visual 16-bit consistente em todas as telas; bundle sem regressão; zero jitter no iPhone; Lighthouse ≥ 85; testes verdes.
+
+---
+
 ## Dependências entre Sprints
 
 ```text
@@ -650,8 +721,9 @@ S6 ──► S7 ──► S8 ─────────────────
 - **S7 depende de S6** (o orchestrator invoca os drivers) **e de S1**.
 - **S9 depende de S3, S4, S5, S7 e S8** (workflow unificado).
 - **S10/S11 só fazem sentido com S9 completo** (não se otimiza/hardeneia o que não existe).
-- **S13–S19 (Homologação) seguem a ordem cronológica** de S0→S12, testando os workflows da jornada (J1–J7) — ver `docs/diagrams/journey.md`.
+- **S13–S19 (Homologação) seguem a ordem cronológica** de S0→S12, testando os workflows da jornada (J1–J7) — ver `diagrams/journey.md`.
 - **S20–S26 (Fase 6 — Correções da Auditoria)** seguem a ordem cronológica da jornada (J1→J7) e podem rodar em paralelo às pendências de device real da Fase 5. Dependências: S20 (auth) e S21 (APIs) são pré-requisitos de S22 (geração real); S24 depende de S22/S23 (deploy usa geração+diff); S25 depende de S24 (deploy/offline); S26 é independente (segurança/viewer).
+- **S27–S30 (Fase 7 — Retrofit 16-bit)** seguem a ordem cronológica após S26 e dependem do `docs/layout.md` (design aprovado). Ordem interna: S27 (fundação/fontes/tokens) → S28 (componentes core) → S29 (interações/VFX) → S30 (polish/bundle/device). São **puramente visuais** — não dependem das correções de negócio (S20–S26) nem bloqueiam o Go Live; podem rodar em paralelo às pendências de device real da Fase 5.
 
 ---
 
@@ -664,7 +736,7 @@ S6 ──► S7 ──► S8 ─────────────────
 | **E2E**       | Playwright | 3 fluxos principais: chat→tools, file CRUD, git workflow completo.     | ⏳ planejado   |
 | **Mobile**    | Testes manuais | iPhones reais (Safari), modo avião, safe-areas, teclado flutuante. | ⏳ device real |
 
-> Os fluxos documentados em `docs/diagrams/workflows.md` (ciclo do agente, navegação, preview, git, layout) têm cobertura automatizada apontada em cada diagrama (ver também a matriz em `docs/diagrams/journey.md`).
+> Os fluxos documentados em `diagrams/workflows.md` (ciclo do agente, navegação, preview, git, layout) têm cobertura automatizada apontada em cada diagrama (ver também a matriz em `diagrams/journey.md`).
 
 > **Regra:** cada sprint entrega seus testes junto do código. Sprint só é "done" com testes verdes.
 

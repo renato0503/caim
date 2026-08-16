@@ -3,10 +3,11 @@
 > **Cerra AI Mobile (CAIM)** — Mobile-first AI coding agent interface running entirely in the browser as a Progressive Web App (PWA).
 
 **Documentos Relacionados:**
-- [implementation.md](./implementation.md) — Plano mestre de sprints (S0–S19) até o Go Live, com critérios de aceite, dependências e estratégia de testes.
+- [implementation.md](./implementation.md) — Plano mestre de sprints (S0–S30) até o Go Live, com critérios de aceite, dependências e estratégia de testes.
 - [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) — Estrutura de pastas e arquitetura planejada.
-- [docs/diagrams/workflows.md](./docs/diagrams/workflows.md) — Workflows de usuário (Mermaid) com cobertura de testes por fluxo.
-- [docs/diagrams/journey.md](./docs/diagrams/journey.md) — Jornada do cliente (J0–J7) com as sprints de homologação.
+- [layout.md](./layout.md) — Arquitetura de Layout 16-bit (design system retro gamificado) — aprovada para a Fase 7.
+- [diagrams/workflows.md](./diagrams/workflows.md) — Workflows de usuário (Mermaid) com cobertura de testes por fluxo.
+- [diagrams/journey.md](./diagrams/journey.md) — Jornada do cliente (J0–J7) com as sprints de homologação.
 
 ---
 
@@ -30,9 +31,9 @@
 | **Testes (Vitest)** | ✅ 79 verdes (16/08)      | `fake-indexeddb` + `vitest.config.js` + `jsdom`. Cobre: VFS (CRUD/path/persistência/eventos), EventEmitter, SecurityService (AES-GCM), Drivers (JSON/XML + truncamento), Tool Executor (path traversal), **Git offline**, **Failover multi-API (401/429/prioridade)**, **Settings 3 APIs cifradas**, **streaming/thinking/abort/contexto**, **Diff blocks (aceitar/rejeitar/minified)**, **Explorer (file-tree)**, **Viewer XSS (markdown/csv/html/xlsx/docx)**. |
 | **Hardening (16/08)** | ✅ Aplicado              | `gitCorsProxy` com host-allowlist GitHub + rate limit 50 req/min por usuário/IP · parser dos drivers tolerante a **truncamento** (S15) · `syncViewport` com throttle `requestAnimationFrame` (jitter do teclado iOS) · **CSP/security headers no Hosting (ao vivo)** · **XSS no viewer (DOMPurify em xlsx/docx/markdown)** · **gitFs com stat por hash de conteúdo**. |
 | **Git**             | ✅ Commitado/pushado           | `main` no `github.com/renato0503/caim`. **S13–S19 automático commitado** · Functions + Hosting redeployados (16/08). |
-| **Pendências**      | 🔄 **device real ⏳** (PWA iPhone, cadastro/login reais, `seed-admin`, `GITHUB_OWNER_PAT`, chaves LLM reais, regras Firestore 2 contas, Lighthouse ≥ 90, modo avião, iPhones), **App Check** (`appCheckSiteKey`), **Node 20 → 22 nas Functions** (decomissiona 2026-10-30), README de instalação, **Fase 6 (S20–S26)** correções da auditoria | |
+| **Pendências**      | 🔄 **device real ⏳** (PWA iPhone, cadastro/login reais, `seed-admin`, `GITHUB_OWNER_PAT`, chaves LLM reais, regras Firestore 2 contas, Lighthouse ≥ 90, modo avião, iPhones), **App Check** (`appCheckSiteKey`), **Node 20 → 22 nas Functions** (decomissiona 2026-10-30), README de instalação, **Fase 6 (S20–S26)** correções da auditoria, **Fase 7 (S27–S30)** Retrofit 16-bit (`docs/layout.md`) | |
 
-> **Próximo passo:** **Fase 6 (S20–S26)** — correções da auditoria cruzada `journey.md` × `workflows.md` (auth resiliente, APIs, geração/contexto, diff, deploy, offline, segurança) + **homologação final em device real** (PWA iPhone, cadastro/login, `seed-admin`, `GITHUB_OWNER_PAT`, chaves reais, 2 contas, Lighthouse ≥ 90). Depois o README de instalação e Go Live oficial.
+> **Próximo passo:** **Fase 7 (S27–S30)** — Retrofit 16-bit conforme `docs/layout.md` (fontes pixel, activity bar, bottom sheet, editor, explorer, partículas, toasts, diff, chat) + **Fase 6 (S20–S26)** correções da auditoria + **homologação final em device real** (PWA iPhone, cadastro/login, `seed-admin`, `GITHUB_OWNER_PAT`, chaves reais, 2 contas, Lighthouse ≥ 90). Depois o README de instalação e Go Live oficial.
 
 ---
 
