@@ -1640,6 +1640,43 @@ body.crt-effect::before {
   text-decoration: none;
 }
 
+.project-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+}
+
+.project-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.project-action {
+  flex: 1;
+  padding: 5px 0;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.project-action:active {
+  transform: translateY(1px);
+}
+
+.project-action-danger {
+  color: var(--pixel-danger);
+  border-color: var(--pixel-danger);
+  background: transparent;
+}
+
 .project-name {
   color: var(--text-primary);
   font-size: 14px;

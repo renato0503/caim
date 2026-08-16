@@ -201,17 +201,69 @@ export class AuthViews {
         return;
       }
       for (const p of projects) {
-        const item = document.createElement('a');
-        item.className = 'project-card';
-        item.href = p.url;
-        item.target = '_blank';
-        item.rel = 'noopener';
-        item.innerHTML = `<span class="project-name">${escapeHtml(p.name)}</span><span class="project-url">${escapeHtml(p.url)}</span>`;
-        projectsEl.appendChild(item);
+        const card = document.createElement('div');
+        card.className = 'project-card';
+        const link = document.createElement('a');
+        link.className = 'project-link';
+        link.href = p.url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.innerHTML = `<span class="project-name">${escapeHtml(p.name)}</span><span class="project-url">${escapeHtml(p.url)}</span>`;
+        const actions = document.createElement('div');
+        actions.className = 'project-actions';
+        const renameBtn = document.createElement('button');
+        renameBtn.type = 'button';
+        renameBtn.className = 'project-action';
+        renameBtn.textContent = 'Renomear';
+        renameBtn.addEventListener('click', () => this.renameProjectCard(card, p));
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'project-action project-action-danger';
+        delBtn.textContent = 'Excluir';
+        delBtn.addEventListener('click', () => this.deleteProjectCard(card, p));
+        actions.appendChild(renameBtn);
+        actions.appendChild(delBtn);
+        card.appendChild(link);
+        card.appendChild(actions);
+        projectsEl.appendChild(card);
       }
     } catch (err) {
       projectsEl.innerHTML = `<div class="auth-note">Erro ao listar projetos: ${escapeHtml(err.message)}</div>`;
     }
+  }
+
+  // Renomeia apenas o rótulo (name no Firestore) — o repo no GitHub fica intacto.
+  renameProjectCard(card, p) {
+    this.notify.prompt(p.name || '', 'Renomear projeto', async (value) => {
+      const name = (value || '').trim();
+      if (!name) return;
+      try {
+        await dbService.renameProject(p.id, name);
+        p.name = name;
+        const nameEl = card.querySelector('.project-name');
+        if (nameEl) nameEl.textContent = name;
+        this.toast('Projeto renomeado');
+      } catch (err) {
+        this.toast(`Erro ao renomear: ${err.message}`, true);
+      }
+    });
+  }
+
+  // Exclui da lista do usuário (Firestore) — o repo continua salvo no GitHub.
+  deleteProjectCard(card, p) {
+    this.notify.confirm(
+      'Isso remove o projeto apenas da sua lista. O repositório continua salvo no GitHub.',
+      'Excluir projeto?',
+      async () => {
+        try {
+          await dbService.deleteProject(p.id);
+          card.remove();
+          this.toast('Projeto removido da lista');
+        } catch (err) {
+          this.toast(`Erro ao excluir: ${err.message}`, true);
+        }
+      }
+    );
   }
 
   // ---------------- Settings (3 APIs LLM) ----------------

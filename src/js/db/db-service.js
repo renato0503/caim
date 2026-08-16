@@ -60,4 +60,16 @@ export const dbService = {
     );
     return snap.docs.map((s) => ({ id: s.id, ...s.data() }));
   },
+
+  async renameProject(projectId, name) {
+    const d = await getDb();
+    const { doc, updateDoc } = await import('firebase/firestore');
+    await updateDoc(doc(d, 'projects', projectId), { name });
+  },
+
+  async deleteProject(projectId) {
+    const d = await getDb();
+    const { doc, deleteDoc } = await import('firebase/firestore');
+    await deleteDoc(doc(d, 'projects', projectId));
+  },
 };
