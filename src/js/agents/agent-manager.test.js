@@ -26,6 +26,22 @@ function sseStream(text) {
   });
 }
 
+// SSE com reasoning_content primeiro (modo "Pensar"), depois o conteúdo final.
+function sseStreamWithThinking(text, thinkingText) {
+  const encoder = new TextEncoder();
+  const payloads = [
+    `data: ${JSON.stringify({ choices: [{ delta: { reasoning_content: thinkingText } }] })}\n\n`,
+    `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`,
+    'data: [DONE]\n\n',
+  ];
+  return new ReadableStream({
+    start(controller) {
+      for (const c of payloads) controller.enqueue(encoder.encode(c));
+      controller.close();
+    },
+  });
+}
+
 function okResponse() {
   return new Response(sseStream('{"message":"ok","files":[]}'), { status: 200 });
 }
@@ -139,5 +155,76 @@ describe('AgentManager — failover e chaves (S8/S14)', () => {
     expect(profile.llm_keys[0].key.ciphertext).not.toContain('sk-');
     await agentManager.sendPrompt({ text: 'x', uid: 'u1' });
     expect(security.decrypt).toHaveBeenCalledWith(profile.llm_keys[0].key);
+  });
+});
+
+describe('AgentManager — streaming, thinking, contexto e abort (S15/J3)', () => {
+  const oneKey = () =>
+    dbService.getUserProfile.mockResolvedValue({
+      llm_keys: [{ provider: 'deepseek', key: encrypted('a', 'ct1'), baseUrl: '', model: '', priority: 1, active: true }],
+    });
+
+  it('streama chunks e thinking (reasoning_content) via callbacks', async () => {
+    oneKey();
+    const json = '{"message":"MVP criado","files":[{"path":"index.html","content":"<h1>Oi</h1>"}]}';
+    const body = sseStreamWithThinking(json, 'vou criar a estrutura…');
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+
+    const chunks = [];
+    const thinking = [];
+    const result = await agentManager.sendPrompt({
+      text: 'crie um site',
+      uid: 'u1',
+      onChunk: (c) => chunks.push(c),
+      onThinking: (c) => thinking.push(c),
+    });
+    expect(chunks.join('')).toBe(json);
+    expect(thinking.join('')).toBe('vou criar a estrutura…');
+    expect(result.thinking).toBe('vou criar a estrutura…');
+    expect(result.message).toBe('MVP criado');
+    expect(result.files).toEqual(['index.html']);
+    expect(result.truncated).toBe(false);
+  });
+
+  it('detecta truncamento (resposta cortada no meio do JSON)', async () => {
+    oneKey();
+    const cut = '{"message":"parcial","files":[{"path":"a.js","content":"const x = 1;';
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(sseStream(cut), { status: 200 }));
+
+    const result = await agentManager.sendPrompt({ text: 'x', uid: 'u1' });
+    expect(result.truncated).toBe(true);
+  });
+
+  it('injeta o contexto dos arquivos abertos no prompt de sistema', async () => {
+    oneKey();
+    globalThis.fetch = vi.fn().mockResolvedValue(okResponse());
+    agentManager.setContext([
+      { path: 'src/app.js', content: 'export const a = 1;' },
+      { path: 'src/b.js', content: 'export const b = 2;' },
+    ]);
+    await agentManager.sendPrompt({ text: 'mude app.js', uid: 'u1' });
+    const body = JSON.parse(fetch.mock.calls[0][1].body);
+    expect(body.messages[0].role).toBe('system');
+    expect(body.messages[0].content).toContain('src/app.js');
+    expect(body.messages[0].content).toContain('export const a = 1;');
+    expect(body.messages[0].content).toContain('src/b.js');
+    agentManager.setContext([]);
+  });
+
+  it('repassa AbortError quando o usuário para a geração', async () => {
+    oneKey();
+    const controller = new AbortController();
+    const fetchMock = vi.fn().mockImplementation((url, opts) => {
+      return new Promise((resolve, reject) => {
+        opts.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      });
+    });
+    globalThis.fetch = fetchMock;
+    const promise = agentManager.sendPrompt({ text: 'x', uid: 'u1', signal: controller.signal });
+    // Espera o fetch ser iniciado (e o listener de abort ser registrado)
+    // antes de abortar — caso contrário o abort acontece sem listener.
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    controller.abort();
+    await expect(promise).rejects.toMatchObject({ name: 'AbortError' });
   });
 });

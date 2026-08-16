@@ -5,6 +5,17 @@ function splitLines(text) {
   return text.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n');
 }
 
+function normalizeNewlines(text) {
+  const t = String(text || '').replace(/\r\n/g, '\n');
+  // Garante newline final antes do diff: o `diff` trata a última linha sem
+  // \n como uma linha "diferente" mesmo com o mesmo texto (ex.: 'b' vs 'b\n').
+  return t.endsWith('\n') ? t : `${t}\n`;
+}
+
+function hasTrailingNewline(text) {
+  return typeof text === 'string' && text.length > 0 && text.endsWith('\n');
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -13,7 +24,9 @@ function escapeHtml(str) {
 
 // Constrói blocos de alteração (removidas → adicionadas) com números de linha 1-based.
 export function buildBlocks(oldContent, newContent) {
-  const parts = diffLines(oldContent || '', newContent || '');
+  // Normaliza newlines ANTES do diff: o `diff` compara linhas byte a byte e
+  // trataria \r\n vs \n como linhas diferentes.
+  const parts = diffLines(normalizeNewlines(oldContent), normalizeNewlines(newContent));
   const blocks = [];
   let block = null;
   let oldNum = 1;
@@ -60,7 +73,8 @@ export function applyBlockAccept(oldContent, newContent, idx) {
   const addedTexts = block.addedLines.map((l) => l.text);
   const before = oldLines.slice(0, Math.max(block.oldStart - 1, 0));
   const after = oldLines.slice(Math.max(block.oldEnd, block.oldStart - 1));
-  return before.concat(addedTexts, after).join('\n');
+  const joined = before.concat(addedTexts, after).join('\n');
+  return hasTrailingNewline(oldContent) && !joined.endsWith('\n') ? `${joined}\n` : joined;
 }
 
 // Descarta o bloco novo, mantendo as linhas antigas (Rejeitar bloco).
@@ -72,7 +86,8 @@ export function applyBlockReject(oldContent, newContent, idx) {
   const removedTexts = block.removedLines.map((l) => l.text);
   const before = newLines.slice(0, Math.max(block.newStart - 1, 0));
   const after = newLines.slice(Math.max(block.newEnd, block.newStart - 1));
-  return before.concat(removedTexts, after).join('\n');
+  const joined = before.concat(removedTexts, after).join('\n');
+  return hasTrailingNewline(newContent) && !joined.endsWith('\n') ? `${joined}\n` : joined;
 }
 
 export function isMinifiedFile(path) {
