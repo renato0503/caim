@@ -1,6 +1,7 @@
 node_modules
 dist
 public
+functions/node_modules
 .firebase
 .DS_Store
 *.log
@@ -8,3 +9,4 @@ public
 .env.local
 .idea
 .vscode
+venv

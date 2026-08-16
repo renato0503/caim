@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner';
+    }
+
+    // ---- users/{uid}: cada usuário acessa apenas o próprio documento ----
+    match /users/{uid} {
+      allow create: if request.auth.uid == uid;
+      allow read, update: if request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    // ---- projects/{id}: apenas o dono do projeto lê/escreve ----
+    match /projects/{projectId} {
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if resource.data.ownerId == request.auth.uid;
+    }
+
+    // ---- config/{key}: cofre global (PAT do Owner / refs) ----
+    // Somente OWNER (role no próprio doc) pode ler; escrita só via console/Cloud.
+    match /config/{key} {
+      allow read: if request.auth != null && isOwner();
+      allow write: if false;
+    }
+  }
+}

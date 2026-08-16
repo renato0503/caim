@@ -1,0 +1,408 @@
+import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, dropCursor } from '@codemirror/view';
+import { EditorState, Compartment, Transaction } from '@codemirror/state';
+import { history, defaultKeymap, historyKeymap, indentWithTab, undo, redo } from '@codemirror/commands';
+import { indentOnInput, bracketMatching } from '@codemirror/language';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { vfs } from '../core/vfs-service.js';
+
+const SAVE_DEBOUNCE = 800;
+
+// S10: setup mínimo (sem autocomplete/lint/search — recorte grande de bundle).
+// A toolbar flutuante já cobre parênteses/chaves/tab no iOS.
+const MINIMAL_SETUP = [
+  lineNumbers(),
+  highlightActiveLineGutter(),
+  highlightActiveLine(),
+  history(),
+  drawSelection(),
+  dropCursor(),
+  EditorState.allowMultipleSelections.of(true),
+  indentOnInput(),
+  bracketMatching(),
+  keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+];
+
+async function loadLanguage(path) {
+  const ext = vfs.constructor.extname(path);
+  switch (ext) {
+    case '.js': case '.mjs': case '.jsx': case '.ts': case '.tsx': {
+      const m = await import('@codemirror/lang-javascript');
+      return m.javascript();
+    }
+    case '.py': {
+      const m = await import('@codemirror/lang-python');
+      return m.python();
+    }
+    case '.html': case '.htm': case '.vue': {
+      const m = await import('@codemirror/lang-html');
+      return m.html();
+    }
+    case '.css': case '.scss': case '.less': {
+      const m = await import('@codemirror/lang-css');
+      return m.css();
+    }
+    case '.json': {
+      const m = await import('@codemirror/lang-json');
+      return m.json();
+    }
+    case '.md': case '.markdown': {
+      const m = await import('@codemirror/lang-markdown');
+      return m.markdown();
+    }
+    default:
+      return [];
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+export class CodeEditor {
+  constructor({ container, tabsEl, statusEl }) {
+    this.container = container;
+    this.tabsEl = tabsEl;
+    this.statusEl = statusEl;
+    this.openFiles = []; // { path, content, savedContent, selection, scrollTop, dirty }
+    this.activePath = null;
+    this.langCompartment = new Compartment();
+    this.saveTimers = new Map();
+    this.saving = new Set();
+    this.createView();
+    this.setupFloatingToolbar();
+  }
+
+  createView() {
+    this.view = new EditorView({
+      state: EditorState.create({
+        doc: '',
+        extensions: [
+          MINIMAL_SETUP,
+          oneDark,
+          this.langCompartment.of([]),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged && this.activePath) {
+              const programmatic = update.transactions.some(
+                (tr) => tr.annotation(Transaction.userEvent) === 'programmatic'
+              );
+              if (!programmatic) this.markDirty(this.activePath);
+            }
+          }),
+        ],
+      }),
+      parent: this.container,
+    });
+  }
+
+  get tab() {
+    return this.openFiles.find((f) => f.path === this.activePath);
+  }
+
+  async openFile(path, { force = false } = {}) {
+    let file = this.openFiles.find((f) => f.path === path);
+    if (!file) {
+      const { content } = await vfs.readFile(path);
+      file = { path, content, savedContent: content, selection: null, scrollTop: 0, dirty: false };
+      this.openFiles.push(file);
+      await this.refreshIfStale(file);
+    } else if ((force || !file.dirty) && file.path !== this.activePath) {
+      await this.refreshIfStale(file);
+    }
+    this.activePath = path;
+    await this.loadActive();
+    this.renderTabs();
+    this.setStatus('Pronto');
+  }
+
+  async refreshIfStale(file) {
+    const { content, lastModified } = await vfs.readFile(file.path);
+    if (!file.savedAt || lastModified > file.savedAt) {
+      file.content = content;
+      file.savedContent = content;
+      file.savedAt = lastModified;
+      file.dirty = false;
+    }
+  }
+
+  async loadActive() {
+    const file = this.tab;
+    if (!file) return;
+    const lang = await loadLanguage(file.path);
+    this.view.dispatch({
+      changes: { from: 0, to: this.view.state.doc.length, insert: file.content },
+      selection: file.selection || undefined,
+      effects: this.langCompartment.reconfigure(lang),
+      annotations: Transaction.userEvent.of('programmatic'),
+    });
+    if (file.scrollTop) {
+      requestAnimationFrame(() => {
+        this.view.scrollDOM.scrollTop = file.scrollTop;
+      });
+    }
+    this.view.focus();
+  }
+
+  markDirty(path) {
+    const file = this.openFiles.find((f) => f.path === path);
+    if (!file) return;
+    file.dirty = true;
+    file.content = this.view.state.doc.toString();
+    file.selection = this.view.state.selection;
+    file.scrollTop = this.view.scrollDOM.scrollTop;
+    this.renderTabs();
+    this.setStatus('Editando...');
+    this.scheduleSave(path);
+  }
+
+  scheduleSave(path) {
+    clearTimeout(this.saveTimers.get(path));
+    const timer = setTimeout(() => this.save(path), SAVE_DEBOUNCE);
+    this.saveTimers.set(path, timer);
+  }
+
+  async save(path) {
+    const file = this.openFiles.find((f) => f.path === path);
+    if (!file || !file.dirty || this.saving.has(path)) return;
+    this.saving.add(path);
+    this.setStatus('Salvando...');
+    try {
+      const result = await vfs.writeFile(path, file.content);
+      const { lastModified } = await vfs.readFile(path);
+      file.dirty = false;
+      file.savedAt = lastModified;
+      file.savedContent = file.content;
+      this.setStatus(`Salvo (${result.created ? 'criado' : 'atualizado'})`);
+    } catch (err) {
+      this.setStatus(`Erro ao salvar: ${err.message}`);
+    } finally {
+      this.saving.delete(path);
+      this.renderTabs();
+    }
+  }
+
+  async saveActive() {
+    if (this.activePath) await this.save(this.activePath);
+  }
+
+  // S5: aplica um conteúdo vindo do diff (aceito/rejeitado) ao editor + VFS
+  async applyContent(path, content, { saved = false } = {}) {
+    const file = this.openFiles.find((f) => f.path === path);
+    if (!file) return;
+    file.content = content;
+    if (saved) {
+      file.savedContent = content;
+      file.dirty = false;
+      file.savedAt = Date.now();
+      await vfs.writeFile(path, content);
+    } else {
+      file.dirty = true;
+    }
+    if (file.path === this.activePath) {
+      this.view.dispatch({
+        changes: { from: 0, to: this.view.state.doc.length, insert: content },
+        effects: this.langCompartment.reconfigure(await loadLanguage(file.path)),
+        annotations: Transaction.userEvent.of('programmatic'),
+      });
+    }
+    this.renderTabs();
+    this.setStatus(saved ? 'Alteração aplicada' : 'Bloco rejeitado');
+  }
+
+  // S5: descarta as alterações e volta ao estado salvo
+  async revert(path) {
+    const file = this.openFiles.find((f) => f.path === path);
+    if (!file) return;
+    file.content = file.savedContent;
+    file.dirty = false;
+    file.selection = null;
+    if (file.path === this.activePath) {
+      this.view.dispatch({
+        changes: { from: 0, to: this.view.state.doc.length, insert: file.content },
+        effects: this.langCompartment.reconfigure(await loadLanguage(file.path)),
+        annotations: Transaction.userEvent.of('programmatic'),
+      });
+    }
+    this.renderTabs();
+    this.setStatus('Alterações descartadas');
+  }
+
+  // S5: lista de arquivos abertos com mudanças não salvas
+  getDiffCandidates() {
+    return this.openFiles
+      .filter((f) => f.dirty)
+      .map((f) => ({ path: f.path, oldContent: f.savedContent, newContent: f.content }));
+  }
+
+  // S7: arquivos abertos para injetar como contexto no agente
+  getOpenFilesContext() {
+    return this.openFiles
+      .slice(-3)
+      .map((f) => ({ path: f.path, content: f.content }));
+  }
+
+  async closeFile(path) {
+    const file = this.openFiles.find((f) => f.path === path);
+    if (!file) return;
+    if (file.dirty) await this.save(path);
+    this.openFiles = this.openFiles.filter((f) => f.path !== path);
+    if (this.activePath === path) {
+      const next = this.openFiles[this.openFiles.length - 1];
+      this.activePath = next ? next.path : null;
+      if (next) {
+        await this.refreshIfStale(next);
+        await this.loadActive();
+      } else {
+        this.view.dispatch({
+          changes: { from: 0, to: this.view.state.doc.length, insert: '' },
+          effects: this.langCompartment.reconfigure([]),
+          annotations: Transaction.userEvent.of('programmatic'),
+        });
+        this.setStatus('Nenhum arquivo aberto');
+      }
+    }
+    this.renderTabs();
+  }
+
+  // S3: remove um arquivo aberto sem salvar (ex.: arquivo excluído no Explorer)
+  async forceRemove(path) {
+    this.openFiles = this.openFiles.filter((f) => f.path !== path);
+    this.saveTimers.delete(path);
+    if (this.activePath === path) {
+      const next = this.openFiles[this.openFiles.length - 1];
+      this.activePath = next ? next.path : null;
+      if (next) {
+        await this.refreshIfStale(next);
+        await this.loadActive();
+      } else {
+        this.view.dispatch({
+          changes: { from: 0, to: this.view.state.doc.length, insert: '' },
+          effects: this.langCompartment.reconfigure([]),
+          annotations: Transaction.userEvent.of('programmatic'),
+        });
+        this.setStatus('Nenhum arquivo aberto');
+      }
+    }
+    this.renderTabs();
+  }
+
+  renderTabs() {
+    if (!this.tabsEl) return;
+    this.tabsEl.innerHTML = '';
+    if (this.openFiles.length === 0) {
+      const empty = document.createElement('span');
+      empty.className = 'editor-tab-empty';
+      empty.textContent = 'Selecione um arquivo no Explorer';
+      this.tabsEl.appendChild(empty);
+      return;
+    }
+    for (const file of this.openFiles) {
+      const tab = document.createElement('button');
+      tab.className = 'editor-tab' + (file.path === this.activePath ? ' active' : '') + (file.dirty ? ' dirty' : '');
+      tab.addEventListener('click', () => this.openFile(file.path));
+      const name = document.createElement('span');
+      name.className = 'editor-tab-name';
+      name.textContent = vfs.constructor.basename(file.path);
+      name.title = file.path;
+      const close = document.createElement('span');
+      close.className = 'editor-tab-close';
+      close.textContent = '×';
+      close.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.closeFile(file.path);
+      });
+      tab.appendChild(name);
+      tab.appendChild(close);
+      this.tabsEl.appendChild(tab);
+    }
+  }
+
+  setStatus(text) {
+    if (this.statusEl) this.statusEl.textContent = text;
+  }
+
+  // ============================================================
+  // S4: Keyboard Floating Toolbar (iOS)
+  // ============================================================
+
+  setupFloatingToolbar() {
+    const bar = document.createElement('div');
+    bar.className = 'editor-floating-toolbar';
+    bar.id = 'editor-toolbar';
+    bar.style.display = 'none';
+
+    const defs = [
+      { label: '{ }', insert: '{}', anchorRel: 1 },
+      { label: '[ ]', insert: '[]', anchorRel: 1 },
+      { label: '( )', insert: '()', anchorRel: 1 },
+      { label: '< >', insert: '<>', anchorRel: 1 },
+      { label: '=', insert: ' = ', anchorRel: 1 },
+      { label: '⇥', insert: '  ', anchorRel: 2 },
+      { label: '↶', command: undo, title: 'Desfazer' },
+      { label: '↷', command: redo, title: 'Refazer' },
+    ];
+
+    for (const def of defs) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'etf-btn';
+      btn.textContent = def.label;
+      btn.title = def.title || def.label;
+      btn.addEventListener('click', () => {
+        if (!this.activePath) return;
+        if (def.command) {
+          def.command(this.view);
+        } else {
+          this.insertAtCursor(def.insert, def.anchorRel);
+        }
+        this.view.focus();
+      });
+      bar.appendChild(btn);
+    }
+
+    document.body.appendChild(bar);
+    this.toolbar = bar;
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => this.updateToolbar());
+      window.visualViewport.addEventListener('scroll', () => this.updateToolbar());
+    }
+    document.addEventListener('focusin', () => this.updateToolbar());
+    document.addEventListener('focusout', () => setTimeout(() => this.updateToolbar(), 0));
+    window.addEventListener('scroll', () => this.updateToolbar(), { passive: true });
+  }
+
+  insertAtCursor(insert, anchorRel = 0) {
+    const { from, to } = this.view.state.selection.main;
+    this.view.dispatch({
+      changes: { from, to, insert },
+      selection: { anchor: from + insert.length },
+      scrollIntoView: true,
+    });
+    const head = this.view.state.selection.main.head - insert.length + anchorRel;
+    this.view.dispatch({
+      selection: { anchor: head },
+      annotations: Transaction.userEvent.of('programmatic'),
+    });
+  }
+
+  updateToolbar() {
+    const bar = this.toolbar;
+    const vv = window.visualViewport;
+    if (!bar || !vv) return;
+    const editorFocused = this.container.contains(document.activeElement);
+    const keyboardLikelyOpen = vv.height < window.innerHeight * 0.7;
+    if (editorFocused && keyboardLikelyOpen && this.activePath) {
+      const H = bar.offsetHeight || 44;
+      bar.style.display = 'flex';
+      bar.style.position = 'fixed';
+      bar.style.left = '0px';
+      bar.style.right = '0px';
+      bar.style.bottom = 'auto';
+      bar.style.top = `${Math.max(vv.height - H, 0)}px`;
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+}
