@@ -89,6 +89,7 @@ sequenceDiagram
 ```
 
 **Contexto (S7):** `editor.getOpenFilesContext()` injeta até 3 arquivos abertos no system prompt (cap 8KB). Histórico do chat persiste no VFS (60 msgs).
+**Truncamento (S15):** se o modelo cortar a resposta no meio de uma tool call (limite de tokens), o parser **salva o arquivo parcial** e o chat exibe "⚠ Resposta truncada — reenvie o prompt" (`detectTruncation` — testes verdes, 16/08).
 
 ---
 
@@ -133,6 +134,7 @@ flowchart TD
 ```
 
 **Regra de ouro:** o PAT do Owner **nunca** existe no frontend; tudo passa pela CF autenticada com o ID token do cliente.
+**Hardening (16/08):** `gitCorsProxy` agora tem **host-allowlist** (só GitHub) + **rate limit 50 req/min** por uid autenticado ou IP — *redeploy de Functions pendente*.
 
 ---
 

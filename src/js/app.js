@@ -70,12 +70,20 @@ function closeDrawer() {
   backdrop.classList.remove('show');
 }
 
-// Atualiza a altura do app para o visualViewport (teclado iOS abre/fecha)
+// Atualiza a altura do app para o visualViewport (teclado iOS abre/fecha).
+// Throttle via requestAnimationFrame: evita "jitter"/layout thrash quando o
+// teclado virtual dispara resize+scroll em rajada (padrão viewport-truth).
+let rafPending = false;
 function syncViewport() {
-  appEl.style.height = `${viewportHeight()}px`;
-  if (sheet.classList.contains('expanded')) {
-    setSheetHeight(Math.min(sheet.offsetHeight, sheetMax()));
-  }
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => {
+    rafPending = false;
+    appEl.style.height = `${viewportHeight()}px`;
+    if (sheet.classList.contains('expanded')) {
+      setSheetHeight(Math.min(sheet.offsetHeight, sheetMax()));
+    }
+  });
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', syncViewport);
@@ -451,7 +459,8 @@ async function sendMessage() {
         $chatMessages.scrollTop = $chatMessages.scrollHeight;
       },
     });
-    const extra = result.files?.length ? `\n\nArquivos criados: ${result.files.join(', ')}` : '';
+    const truncatedNote = result.truncated ? '\n\n⚠ **Resposta truncada** — o modelo cortou a saída no meio. Reenvie o prompt para completar.' : '';
+    const extra = `${truncatedNote}${result.files?.length ? `\n\nArquivos criados: ${result.files.join(', ')}` : ''}`;
     finalText = `${buf || result.message}${extra}`;
     textEl.textContent = '';
     renderMarkdownTo(textEl, finalText);

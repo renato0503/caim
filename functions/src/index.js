@@ -117,12 +117,71 @@ exports.githubDeployProxy = onRequest({ cors: true, maxInstances: 20 }, async (r
 
 // ---------- gitCorsProxy (push via isomorphic-git) ----------
 
+// Allowlist: o proxy só encaminha para endpoints GitHub (blinda contra uso
+// do proxy como open-relay para minerar/atacar outras APIs).
+const ALLOWED_GIT_HOSTS = [
+  'https://api.github.com',
+  'https://github.com',
+  'https://raw.githubusercontent.com',
+  'https://objects.githubusercontent.com',
+  'https://codeload.github.com',
+];
+
+// Rate limit best-effort por instância (50 req/min por chave).
+const RATE_LIMIT_MAX = 50;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const rateHits = new Map();
+
+function isRateLimited(key) {
+  const now = Date.now();
+  const hits = (rateHits.get(key) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (hits.length >= RATE_LIMIT_MAX) {
+    rateHits.set(key, hits);
+    return true;
+  }
+  hits.push(now);
+  rateHits.set(key, hits);
+  return false;
+}
+
 exports.gitCorsProxy = onRequest({ cors: true, maxInstances: 10 }, async (req, res) => {
   const target = req.query.url;
   if (!target || typeof target !== 'string') {
     res.status(400).send('Missing ?url');
     return;
   }
+
+  // 1) Host allowlist
+  let parsed;
+  try {
+    parsed = new URL(target);
+  } catch (err) {
+    res.status(400).send('Invalid ?url');
+    return;
+  }
+  if (!ALLOWED_GIT_HOSTS.includes(parsed.origin)) {
+    res.status(403).send('Host não permitido pelo proxy CAIM');
+    return;
+  }
+
+  // 2) Rate limit: por usuário autenticado (se Bearer) senão por IP
+  const authHeader = req.headers.authorization || '';
+  let rateKey;
+  if (authHeader.startsWith('Bearer ')) {
+    try {
+      const { uid } = await verifyAuth(req);
+      rateKey = `uid:${uid}`;
+    } catch (err) {
+      rateKey = `ip:${req.headers['x-forwarded-for'] || req.ip || 'unknown'}`;
+    }
+  } else {
+    rateKey = `ip:${req.headers['x-forwarded-for'] || req.ip || 'unknown'}`;
+  }
+  if (isRateLimited(rateKey)) {
+    res.status(429).send('Rate limit excedido (50 req/min). Tente novamente em instantes.');
+    return;
+  }
+
   const method = typeof req.query.method === 'string' ? req.query.method : req.method;
 
   const headers = {};

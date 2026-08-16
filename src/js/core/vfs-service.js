@@ -12,6 +12,7 @@ function normalizePath(rawPath) {
   for (const seg of path.split('/')) {
     if (!seg || seg === '.') continue;
     if (seg === '..') {
+      if (parts.length === 0) throw new Error('Caminho inválido: não é possível sair do VFS (../)');
       parts.pop();
       continue;
     }
@@ -115,7 +116,7 @@ export class VFSService {
     if (typeof content !== 'string') throw new Error('Content must be a string');
     if (content.length > MAX_FILE_SIZE) throw new Error('File too large (max 1MB)');
     const existing = await this.db.files.get(p);
-    const mime = this.resolveMime(p, content);
+    const mime = VFSService.resolveMime(p, content);
     await this.db.files.put({ path: p, content, lastModified: Date.now(), mimeType: mime });
     await this.ensureParentDirs(p);
     if (!silent) this.events.emit('vfs:changed', { type: existing ? 'update' : 'create', path: p });

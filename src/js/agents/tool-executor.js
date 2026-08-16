@@ -25,7 +25,7 @@ export class ToolExecutor {
   validatePath(path) {
     if (typeof path !== 'string' || !path.trim()) throw new Error('path inválido');
     if (path.startsWith('/') || path.includes('..')) throw new Error('path inválido');
-    if (path.startsWith('.git/')) throw new Error('path protegido');
+    if (path === '.git' || path.startsWith('.git/')) throw new Error('path protegido');
   }
 
   async writeFile({ path, content }) {
@@ -43,6 +43,7 @@ export class ToolExecutor {
   }
 
   async listDir({ path = '' } = {}) {
+    if (path) this.validatePath(path);
     const entry = await vfs.listDir(path || '');
     const dirs = entry.dirs.map((d) => d.name).join(', ') || '-';
     const files = entry.files.map((f) => f.name).join(', ') || '-';

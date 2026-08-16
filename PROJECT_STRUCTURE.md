@@ -42,7 +42,12 @@
 - `src/js/security/security-service.js` — Web Crypto AES-GCM (PAT/API keys).
 - `src/js/git/git-service.js` + `git/vfs-fs.js` — isomorphic-git sobre o VFS + proxy CORS.
 - `src/js/utils/base64.js` — helpers de base64.
+- `src/js/security/security-service.js` — Web Crypto AES-GCM (PAT/API keys).
+- `src/js/git/git-service.js` + `git/vfs-fs.js` — isomorphic-git sobre o VFS + proxy CORS.
 - `src/css/main.css` — Design tokens + layout IDE + auth/dashboard/settings + diff + git.
+- `src/test/setup.js` — setup do Vitest (`fake-indexeddb` + `resetIndexedDB()`).
+- `vitest.config.js` — config isolada do Vite (sem plugin PWA) para os testes.
+- `src/**/*.test.js` — **37 testes verdes (16/08)**: `vfs-service`, `event-emitter`, `security-service`, `tool-executor`, `agents/drivers/drivers`.
 
 ## Functions (`functions/`)
 
@@ -70,11 +75,12 @@
 
 ## Roadmap (pendências)
 
-1. **S10 🔄** — validar bundle/core enxuto no device; continuar otimizações se preciso.
-2. **S11 🔄** — ativar App Check (`appCheckSiteKey`), auditoria XSS/memória.
-3. **S12 🔄** — Lighthouse ≥ 90, iPhones reais, redeploy final.
-4. **Fase 5 (S13–S19)** — homologação da jornada do cliente (J1–J7) na ordem cronológica; ver `docs/diagrams/journey.md`.
+1. **S13 🔄** — parte automática ✅ (VFS/auth-gate/testes); **device real**: PWA install, cadastro/login, `seed-admin`, `GITHUB_OWNER_PAT`, regras com 2 contas.
+2. **S14–S19** — homologação da jornada J2–J7 (APIs, geração+diff, deploy+IDE, offline, segurança, Go Live); ver `docs/diagrams/journey.md`.
+3. **S11 🔄** — ativar App Check (`appCheckSiteKey`), auditoria memória (S18).
+4. **S18/S19** — **redeploy de Functions** (hardening do `gitCorsProxy` já no code); Lighthouse ≥ 90, iPhones reais.
 5. **Postergadas** — KiloDriver, conflitos de merge, virtualização da árvore, swipe de gestos.
+6. **Roadmap pós-Go-Live** — chaves LLM só-locais (opção), Cloud Sync (RxDB) multi-device, colaboração (ver `context.md` §12).
 
 ## Planned Architecture (alvo)
 

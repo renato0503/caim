@@ -175,6 +175,7 @@ class AgentManager {
       const { full, thinking } = await streamReader(res, { onChunk, onThinking });
       const message = this.driver.extractMessage(full);
       const tools = this.driver.parseResponse(full);
+      const truncated = typeof this.driver.detectTruncation === 'function' && this.driver.detectTruncation(full);
       const results = [];
       const created = [];
       for (const t of tools) {
@@ -186,7 +187,10 @@ class AgentManager {
           results.push(`ERRO ${t.tool}: ${err.message}`);
         }
       }
-      return { message, files: created, results, thinking };
+      if (truncated) {
+        results.push('⚠ resposta truncada: a saída do modelo foi cortada no meio. Reenvie o prompt para completar.');
+      }
+      return { message, files: created, results, thinking, truncated };
     } finally {
       clearTimeout(timeoutId);
       signal?.removeEventListener('abort', onAbort);

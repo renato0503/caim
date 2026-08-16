@@ -8,7 +8,7 @@
 
 ---
 
-## Status Atual (Snapshot — 2026-08-15)
+## Status Atual (Snapshot — 2026-08-16)
 
 | Área                      | Estado                                   | Observação                                                                              |
 | ------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -25,10 +25,12 @@
 | **Deploy**          | ✅ Live                        | **https://caim.web.app** · Functions `githubDeployProxy` + `gitCorsProxy`. |
 | **Firebase config** | ✅ Real                        | `projectId: cerraimobile` · Blaze · Auth + Firestore (usuário `gestor.renatorosa@gmail.com`). |
 | **Performance (S10)** | ✅ Core ~156KB gzip        | Framework7 removido (mini-UI `notify.js`), CodeMirror minimal, code-splitting nativo. CSS 5,6KB. Lazy: xlsx/mammoth/isomorphic-git/firebase. |
-| **Git**             | ✅ Commitado/pushado           | `main` no `github.com/renato0503/caim` (`a6e5bdd`). |
-| **Pendências**      | 🔄 S11 (memory/App Check), S12 (iPhones/Lighthouse ≥90), **Fase 5 (S13–S19 homologação J1–J7)** | |
+| **Testes (Vitest)** | ✅ 37 verdes (16/08)      | `fake-indexeddb` + `vitest.config.js`. Cobre: VFS (CRUD/path/persistência/eventos), EventEmitter, SecurityService (AES-GCM), Drivers (JSON/XML + truncamento), Tool Executor (path traversal). |
+| **Hardening (16/08)** | ✅ Aplicado              | `gitCorsProxy` com host-allowlist GitHub + rate limit por usuário/IP · parser dos drivers tolerante a **truncamento** (S15) · `syncViewport` com throttle `requestAnimationFrame` (jitter do teclado iOS). |
+| **Git**             | ✅ Commitado/pushado           | `main` no `github.com/renato0503/caim` (`a6e5bdd`). *(S13 não commitado ainda.)* |
+| **Pendências**      | 🔄 **S13 parcial** (automação ✅ / device real ⏳), S14–S19 (homologação J1–J7), S11 (memory/App Check), S12 (iPhones/Lighthouse ≥90) | |
 
-> **Próximo passo:** **Fase 5 — Homologação (S13–S19)** — testar a jornada do cliente J1–J7 na ordem cronológica (`docs/diagrams/journey.md`). Antes: rodar `seed-admin` (role owner) + `firebase functions:secrets:set GITHUB_OWNER_PAT` para destravar o deploy ponta-a-ponta.
+> **Próximo passo:** **S13 — homologação em device real** (parte automática ✅): instalar PWA no iPhone, cadastro/login reais, `seed-admin` (role owner), `firebase functions:secrets:set GITHUB_OWNER_PAT` e testar regras Firestore com 2 contas. Depois seguir a jornada J2–J7 (S14–S19) na ordem de `docs/diagrams/journey.md`.
 
 ---
 
@@ -109,7 +111,7 @@ CAIM is a 100% mobile-first, web-based IDE and AI coding agent interface designe
 | **Version Control** | `isomorphic-git` + `lightning-fs` | Pure JavaScript implementation of Git parsing and execution. ⏳ (S2)               |
 | **Security**        | Web Crypto API                        | AES-GCM encryption for storing GitHub PATs and LLM API keys locally. ⏳ (S2)       |
 | **Icons**           | Lucide Icons (SVG inline)             | Lightweight, scalable SVG integration.                                             |
-| **Testing**         | Vitest + Playwright                   | Unit/integration tests (Vitest) and E2E of the main flows (Playwright).            |
+| **Testing**         | Vitest + Playwright                   | **Unit/integration: Vitest 37 verdes** (`fake-indexeddb`); E2E (Playwright) planejado na Fase 5. |
 
 ---
 
@@ -299,4 +301,19 @@ This is a strictly controlled, solo-engineer project.
 
 ---
 
-*Last updated: 2026-08-15*
+## 12. Benchmarking & Roadmap (research 16/08)
+
+Referências estudadas em 16/08 e o que já foi incorporado ou ficou para o roadmap pós-Go-Live:
+
+| Fonte | Aprendizado | Status no CAIM |
+| ----- | ----------- | -------------- |
+| `oscarleuuh/nuncio`, `TheStrongestOfTomorrow/Nexus-IDE` | Mobile-first PWA delegando tarefas a agentes; **chaves de API estritamente locais (IndexedDB), código nunca passa por SaaS intermediário** | ✅ Valida a regra de ouro (PAT do Owner só no Secret Manager). Chaves LLM cifradas (AES-GCM) em `users/{uid}` com **master key local** — trade-off cross-device documentado; opção "chaves só locais" no roadmap. |
+| `hack-pad/hackpadfs` | FS extensível + driver próprio de IndexedDB com operações atômicas | ✅ VFS validado por testes (CRUD/persistência/atomicidade); adotar padrões do hackpadfs se surgir corrupção de estado. |
+| CodeMirror 6 + `visualViewport` + `viewport-truth` | Teclado iOS: `requestAnimationFrame` atrelado ao resize do `visualViewport` reduz **jitter** da toolbar flutuante e do bottom sheet | ✅ Aplicado em `app.js` (`syncViewport` com throttle rAF). Validação em iPhone real pendente (S19). |
+| `opencode-ai/opencode`, `cline/cline` (issues de parsing) | **Truncamento de resposta no meio da tool call** (tag XML/JSON cortada) é o bug clássico — parser precisa ser tolerante | ✅ Aplicado nos drivers (`salvageTruncatedWrite` + `detectTruncation` + aviso no chat). Testes verdes. |
+| `Zibri/cloudflare-cors-anywhere`, `rednafi/cors-proxy` | Blindar proxy CORS: **host-allowlist** (só api.github.com etc.) + **rate limit por usuário/IP** | ✅ Aplicado na CF `gitCorsProxy` (allowlist + 50 req/min por uid/IP). Redeploy de Functions pendente. |
+| `pazguille/offline-first`, RxDB | Evicção do Safari; **Cloud Sync IndexedDB ↔ backend** (RxDB) para trocar de device sem perder contexto | ⏳ Roadmap pós-Go-Live (multi-device, colaboração). |
+
+---
+
+*Last updated: 2026-08-16*

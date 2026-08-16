@@ -27,6 +27,25 @@
 
 ## Registro de Progresso (2026-08-15)
 
+### Sessão de 16/08 — S13 (parcial): testes automatizados + fixes de homologação
+
+- **Bug crítico encontrado e corrigido:** `VFS.writeFile` chamava `this.resolveMime()` mas `resolveMime` é **estático** → **toda escrita de arquivo quebrava** (novo arquivo, chat demo, upload, autosave). Corrigido para `VFSService.resolveMime()` (`vfs-service.js:119`). Detectado pelos novos testes (antes só "funcionava" porque o demo engolia o erro do Tool Executor).
+- **Path traversal (DoD J1):** `normalizePath` agora **bloqueia `..` que escapa da raiz** com erro amigável ("Caminho inválido: não é possível sair do VFS (../)") em vez de silenciosamente virar um path órfão.
+- **Auth-gate sem flash (J1):** `screen-ide` deixou de ser a tela ativa padrão no `index.html`; `screen-auth` é o default. Visitante não logado não vê a IDE nem por um instante.
+- **Testes (Vitest + `fake-indexeddb`):** infra criada (`vitest.config.js`, `src/test/setup.js`) com **24 testes verdes** — VFS (CRUD, rename, delete, path traversal, persistência pós-reload, listDir, mime, limite 1MB, eventos `vfs:changed`), EventEmitter e SecurityService (AES-GCM round-trip, IV aleatório, master key persistente, adulteração falha).
+- **Build:** `npm run build` limpo (zero erros) · dev server boot OK · core eager **155,80 KB gzip** (meta < 400KB ✅).
+- **Pendente (device real, manual):** PWA install/splash, cadastro/login reais, `seed-admin`, `GITHUB_OWNER_PAT` + deploy ponta-a-ponta, regras Firestore com 2 contas. Risco conhecido: `xlsx` (SheetJS) com advisory high sem fix no npm — aceito, lazy-load no viewer (S18).
+
+### Sessão de 16/08 (cont.) — Hardening com base em research (nuncio/Nexus-IDE/hackpadfs/viewport-truth/opencode/cline/cors-proxy)
+
+- **Parser tolerante a truncamento (S15-critical):** `ClineDriver` agora **salva `write_file` sem fechamento no fim da stream** (conteúdo parcial, flag `truncated`) + `detectTruncation()`; `OpenCodeDriver` **resgata arquivos completos de JSON truncado** via regex; `agent-manager`/`app.js` exibem aviso "⚠ Resposta truncada — reenvie o prompt". *(Bug clássico do Cline: modelos cortam a resposta no limite de tokens, no meio da tag.)*
+- **`gitCorsProxy` blindado (S19/S2):** host-**allowlist** (só `api.github.com`/`github.com`/`raw.githubusercontent.com`/`objects.githubusercontent.com`/`codeload.github.com`) + **rate limit 50 req/min** por usuário autenticado (Bearer → uid) ou IP. Impede uso do proxy como open-relay.
+- **`syncViewport` com throttle `requestAnimationFrame`** (`app.js`): teclado iOS dispara resize+scroll em rajada — o throttle elimina o jitter da toolbar flutuante/bottom sheet (padrão `viewport-truth`).
+- **Tool Executor:** `listDir` passou a validar path (`validatePath`) e `.git` (sem barra) agora é bloqueado — fechamento de brecha S6.
+- **VFS:** `.git` (sem barra) não era protegido na validação do executor — corrigido.
+- **Testes:** +13 → **37 verdes** (drivers truncamento JSON/XML, tool-executor path traversal, `.git`, listDir).
+
+
 ### Sessão de 15/08 — Rebuild F7 + Stack + Editor/Explorer + Visualizador
 
 - **Rebuild do app shell em Framework7 9.1.2 (Vanilla JS):** abas Chat/Editor/Files + tabbar inferior com SVGs inline. Substituiu a UI custom manual.
@@ -406,13 +425,13 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 
 **Cobre:** S0 (PWA) · S1 (VFS) · S11 (auth-gate) · S12 (deploy).
 
-- [ ] **PWA:** instalar via "Add to Home Screen"; abre standalone sem barra de URL; splash correto.
-- [ ] **Auth-gate:** visitante não logado vê só a tela de login; logout volta para login.
-- [ ] **Cadastro:** criar conta nova (nome/email/senha/whatsapp) → `users/{uid}` criado no Firestore com `role: client`.
-- [ ] **Login:** `gestor.renatorosa@gmail.com` entra; dashboard mostra nome.
-- [ ] **Seed owner:** rodar `seed-admin` → `users/{uid}.role == 'owner'`; regra `config/{key}` só OWNER.
-- [ ] **VFS:** criar/editar/renomear/excluir arquivo persiste após reload; `../` bloqueado com erro amigável.
-- [ ] **firestore.rules:** tentar ler `projects` de outro usuário → negado (testar com 2 contas).
+- [ ] **PWA:** instalar via "Add to Home Screen"; abre standalone sem barra de URL; splash correto. *(device real)*
+- [x] **Auth-gate:** visitante não logado vê só a tela de login; logout volta para login. *(verificado no boot; sem flash de IDE — fix 16/08)*
+- [ ] **Cadastro:** criar conta nova (nome/email/senha/whatsapp) → `users/{uid}` criado no Firestore com `role: client`. *(device real)*
+- [ ] **Login:** `gestor.renatorosa@gmail.com` entra; dashboard mostra nome. *(device real)*
+- [ ] **Seed owner:** rodar `seed-admin` → `users/{uid}.role == 'owner'`; regra `config/{key}` só OWNER. *(requer service account GCP)*
+- [x] **VFS:** criar/editar/renomear/excluir arquivo persiste após reload; `../` bloqueado com erro amigável. *(24 testes verdes + 2 fixes — 16/08)*
+- [ ] **firestore.rules:** tentar ler `projects` de outro usuário → negado (testar com 2 contas). *(device real / rules simulator)*
 
 **Critérios de Aceite:** zero console errors no fluxo completo; regras de Firestore aplicadas no console.
 
@@ -438,6 +457,7 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 - [ ] **Contexto:** com 2 arquivos abertos, pedir alteração citando-os → agente usa o conteúdo.
 - [ ] **Histórico:** recarregar a página → chat recarrega as últimas mensagens.
 - [ ] **Diff:** editar um arquivo → pane Diff lista; aceitar/rejeitar bloco reflete no VFS e no editor; `.min.js`/`.map` ignorados.
+- [x] **Truncamento (S15-critical):** resposta cortada no meio de `<write_to_file>` ou de JSON → arquivo parcial salvo + aviso "Resposta truncada" no chat. *(Parser tolerante + `detectTruncation` — coberto por testes, 16/08.)*
 
 **Critérios de Aceite:** sem XSS (injetar markdown malicioso → sanitizado); nenhum console error durante streaming/abort.
 
@@ -471,7 +491,8 @@ Para que uma tarefa seja considerada concluída, ela deve obrigatoriamente cumpr
 - [ ] **XSS:** chat com markdown com `<img onerror>`, `<script>` → sanitizado (DOMPurify); preview HTML em iframe sandbox.
 - [ ] **Memory:** alternar 50× entre arquivos grandes no editor → RAM estável no Safari.
 - [ ] **Acessibilidade:** ARIA labels presentes; navegação por teclado no desktop.
-- [ ] **Path traversal:** tool executor rejeita `..`, `/abs`, `.git/`.
+- [x] **Path traversal:** tool executor rejeita `..`, `/abs`, `.git/`. *(testes verdes — incl. `listDir` e `.git` sem barra, 16/08)*
+- [x] **Proxy CORS blindado:** `gitCorsProxy` com host-allowlist (só GitHub) + rate limit 50 req/min por uid/IP. *(aplicado em code; **redeploy de Functions pendente**)*
 
 **Critérios de Aceite:** auditoria sem falhas críticas; Lighthouse Best Practices 100 (já verificado).
 
