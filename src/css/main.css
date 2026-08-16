@@ -250,13 +250,6 @@ button,
   min-width: 0;
 }
 
-.ide-logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  object-fit: contain;
-}
-
 .ide-title {
   display: flex;
   align-items: center;

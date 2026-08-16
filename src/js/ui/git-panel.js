@@ -181,8 +181,17 @@ export class GitPanel {
       if (initialized) {
         const status = await gitService.status();
         this.renderFiles(status);
+        // S24: push pendente — commits locais sem remote
+        try {
+          const remote = await gitService.getRemote();
+          const log = await gitService.log(1);
+          this.setPendingPush(!remote && log.length > 0);
+        } catch (err) {
+          this.setPendingPush(false);
+        }
       } else {
         this.el.files.innerHTML = '<li class="gp-note">Rode Init para começar</li>';
+        this.setPendingPush(false);
       }
     } catch (err) {
       this.el.repoState.textContent = `Erro: ${err.message || err}`;

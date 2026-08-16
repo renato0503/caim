@@ -283,30 +283,16 @@ const gitPanel = new GitPanel({
   onResetWorkspace: resetWorkspace,
   onExportZip: () => exportProjectAsZip(),
   onDeployed: (url) => {
-    notify.toast(`MVP publicado! O GitHub está construindo. ${url}`, { position: 'center' });
+    // o deployProject já emite o toast de status (construindo → sucesso)
   },
 });
 
 // S24: aviso de "push pendente" ao voltar online (commits locais sem remote)
-async function checkPendingPush() {
-  try {
-    const remote = await gitService.getRemote();
-    const log = await gitService.log(1);
-    gitPanel.setPendingPush(!remote && log.length > 0);
-  } catch (err) {
-    gitPanel.setPendingPush(false);
-  }
-}
+// — integrado no GitPanel.refresh (método nativo).
 window.addEventListener('online', () => {
-  checkPendingPush();
+  gitPanel.refresh();
   notify.toast('Conexão restabelecida.', { position: 'center' });
 });
-gitPanel.refresh = gitPanel.refresh.bind(gitPanel);
-const origRefresh = gitPanel.refresh.bind(gitPanel);
-gitPanel.refresh = async () => {
-  await origRefresh();
-  await checkPendingPush();
-};
 
 // Foco no editor recolhe o bottom sheet (editor sempre em primeiro plano)
 document.getElementById('editor-container').addEventListener('focusin', () => {
