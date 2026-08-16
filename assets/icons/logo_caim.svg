@@ -4,7 +4,7 @@
     <style>
       text {
         font-family: 'Press Start 2P', monospace;
-        font-size: 96px;
+        font-size: 148px;
         font-weight: 400;
       }
     </style>
@@ -20,9 +20,9 @@
     <line x1="384" y1="0" x2="384" y2="512"/>
   </g>
   <!-- sombra pixel (deslocada) -->
-  <text x="256" y="292" text-anchor="middle" fill="#020617" transform="translate(8,8)">CAIM</text>
+  <text x="256" y="330" text-anchor="middle" fill="#020617" transform="translate(10,10)">CAIM</text>
   <!-- contorno teal escuro -->
-  <text x="256" y="292" text-anchor="middle" fill="#14b8a6" style="paint-order:stroke" stroke="#0f766e" stroke-width="6">CAIM</text>
+  <text x="256" y="330" text-anchor="middle" fill="#14b8a6" style="paint-order:stroke" stroke="#0f766e" stroke-width="8">CAIM</text>
   <!-- texto principal teal brilhante -->
-  <text x="256" y="292" text-anchor="middle" fill="#2dd4bf">CAIM</text>
+  <text x="256" y="330" text-anchor="middle" fill="#2dd4bf">CAIM</text>
 </svg>

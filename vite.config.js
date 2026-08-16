@@ -37,13 +37,19 @@ export default defineConfig({
         name: 'CAIM',
         short_name: 'CAIM',
         description: 'Mobile-first AI coding agent interface',
-        theme_color: '#000000',
-        background_color: '#000000',
+        theme_color: '#0f172a',
+        background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/app',
         scope: '/',
         icons: [
+          {
+            src: '/assets/icons/logo_caim.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
           {
             src: '/assets/icons/icon-192.png',
             sizes: '192x192',
