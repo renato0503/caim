@@ -3,7 +3,7 @@
 > **Cerra AI Mobile (CAIM)** — Mobile-first AI coding agent interface running entirely in the browser as a Progressive Web App (PWA).
 
 **Documentos Relacionados:**
-- [implementation.md](./implementation.md) — Plano mestre de sprints (S0–S30) até o Go Live, com critérios de aceite, dependências e estratégia de testes.
+- [implementation.md](./implementation.md) — Plano mestre de sprints (S0–S36) até o Go Live, com critérios de aceite, dependências e estratégia de testes.
 - [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) — Estrutura de pastas e arquitetura planejada.
 - [layout.md](./layout.md) — Arquitetura de Layout 16-bit (design system retro gamificado) — aprovada para a Fase 7.
 - [diagrams/workflows.md](./diagrams/workflows.md) — Workflows de usuário (Mermaid) com cobertura de testes por fluxo.
@@ -16,27 +16,66 @@
 | Área                      | Estado                                   | Observação                                                                              |
 | ------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------- |
 | **App shell (S0/S4.5)**   | ✅ Concluído                    | **Layout IDE** (activity bar + editor central + bottom sheet + drawer) em **JS puro** (mini-UI `notify.js`) + Vite 8 + `vite-plugin-pwa`. *(Framework7 removido no S10 — core enxuto.)* |
-| **Build tooling**   | ✅ Instalado                   | Vite 8 (rolldown), `scripts/copy-assets.mjs`, `INICIAR.bat`. Dev em `http://localhost:5173/`. |
-| **VFS (S1)**        | ✅ Concluído                    | `vfs-service.js` (Dexie: CRUD, rename, path protection, data URLs) + `event-emitter.js`. |
+| **Build tooling**   | ✅ Instalado                   | Vite 8 (rolldown), `scripts/copy-assets.mjs`, `INICIAR.bat`. Dev em `http://localhost:5173/`. **21/08:** corrigida referência morta ao Framework7 no `manualChunks` do `vite.config.js` (travava o dev server no optimizer). |
+| **VFS (S1)**        | ✅ Concluído                    | `vfs-service.js` (Dexie: CRUD, rename, path protection, data URLs) + `event-emitter.js`. **v2 (S36):** tabelas `projects` + `project_files` p/ o gestor de projetos. |
 | **Git (S2)**        | ✅ Concluído                    | `git-service.js` (isomorphic-git + VFS adapter) + `security-service.js` (AES-GCM) + CF `gitCorsProxy` no ar. |
 | **Explorer (S3)**   | ✅ Concluído                    | Árvore + drawer + upload + renomear/excluir (menu ⋯). |
 | **Editor (S4)**     | ✅ Concluído                    | CodeMirror 6: tabs, autosave 800ms, langs lazy, **toolbar flutuante iOS**. |
 | **Viewer (S3.5)**   | ✅ Concluído                    | Preview md/img/html/pdf/csv/docx/xlsx/pptx no pane `preview`. |
 | **Diff (S5)**       | ✅ Concluído                    | Diffs por bloco no bottom sheet (aceitar/rejeitar). |
 | **Agentes (S6/S7/S8)** | ✅ Concluído                | Drivers (JSON/XML) + Tool Executor + failover multi-API + streaming/thinking/abort + contexto. |
-| **SaaS (auth-gate)** | ✅ Em produção                | Login/cadastro obrigatórios, dashboard de MVPs, **Settings simplificado (cole a chave → provider autodetectado por prefixo)** com 6 providers (deepseek/qwen/openai/nvidia/groq/opencode), deploy via CF `githubDeployProxy` (PAT do Owner no Secret Manager). |
+| **SaaS (auth-gate)** | ✅ Em produção                | Login/cadastro obrigatórios, **gestor de projetos (S36)** — locais (snapshots no VFS: continuar/renomear/excluir só local) + publicados (Firestore, repo no GitHub nunca é apagado) + botão "Novo projeto", **Settings simplificado (cole a chave → provider autodetectado por prefixo)** com 6 providers (deepseek/qwen/openai/nvidia/groq/opencode), deploy via CF `githubDeployProxy` (PAT do Owner no Secret Manager). **Toast de deploy persistente (S36b)** — `duration:0` no `notify.toast`; sucesso avisa "Ficou salvo no dashboard" com botão "Abrir". |
 | **Deploy**          | ✅ Live                        | **https://caim.web.app** (landing) · **https://caim.web.app/app** (IDE) · Functions `githubDeployProxy` + `gitCorsProxy`. |
 | **Firebase config** | ✅ Real                        | `projectId: cerraimobile` · Blaze · Auth + Firestore (usuário `gestor.renatorosa@gmail.com`). |
 | **Performance (S10)** | ✅ Core ~156KB gzip        | Framework7 removido (mini-UI `notify.js`), CodeMirror minimal, code-splitting nativo. CSS 5,6KB. Lazy: xlsx/mammoth/isomorphic-git/firebase. |
-| **Testes (Vitest)** | ✅ 99 verdes (16/08)      | `fake-indexeddb` + `vitest.config.js` + `jsdom`. Cobre: VFS (CRUD/path/persistência/eventos), EventEmitter, SecurityService (AES-GCM + derivação por UID), Drivers (JSON/XML + truncamento), Tool Executor (path traversal), **Git offline**, **Failover multi-API (401/429/prioridade)**, **Settings 3 APIs cifradas**, **streaming/thinking/abort/contexto**, **Diff blocks (aceitar/rejeitar/minified)**, **Explorer (file-tree)**, **Viewer XSS (markdown/csv/html/xlsx/docx)**. |
+| **Testes (Vitest)** | ✅ 141 verdes (16/08)      | `fake-indexeddb` + `vitest.config.js` + `jsdom`. Cobre: VFS (CRUD/path/persistência/eventos), EventEmitter, SecurityService (AES-GCM + derivação por UID), Drivers (JSON/XML + truncamento), Tool Executor (path traversal), **Git offline**, **Failover multi-API (401/429/prioridade)**, **Settings 3 APIs cifradas**, **streaming/thinking/abort/contexto**, **Diff blocks (aceitar/rejeitar/minified)**, **Explorer (file-tree)**, **Viewer XSS (markdown/csv/html/xlsx/docx)**, **Fase 8: gate chitchat (S32), memória+overwrite (S33), demo robusto (S35)**, **chat-renderer jsdom: bubble legível + intenção "ver o site" (S31/S34)**, **gestor de projetos S36: project-service (snapshot/continuar/renomear/excluir local/markDeployed) + dashboard jsdom (cards locais/publicados, Novo projeto, Continuar→IDE)**, **notify toast persistente S36b (duration:0, botão fecha+onClick, fake timers)**. |
 | **Hardening (16/08)** | ✅ Aplicado              | `gitCorsProxy` com host-allowlist GitHub + rate limit 50 req/min por usuário/IP · parser dos drivers tolerante a **truncamento** (S15) · `syncViewport` com throttle `requestAnimationFrame` (jitter do teclado iOS) · **CSP/security headers no Hosting (ao vivo)** · **XSS no viewer (DOMPurify em xlsx/docx/markdown)** · **gitFs com stat por hash de conteúdo**. |
 | **Git**             | ✅ Commitado/pushado           | `main` no `github.com/renato0503/caim`. **S13–S19 automático commitado** · Functions + Hosting redeployados (16/08). |
 | **Admin SDK (owner)** | ✅ Ativo (16/08)          | Service account `firebase-adminsdk-fbsvc@cerraimobile` guardado **fora do repo** (`C:\Users\Renato\AppData\Local\Temp\opencode\caim-service-account\service-account.json`, restrito) — usado p/ gravar **llm_keys do owner diretamente no Firestore** cifradas com a chave derivada do UID (`seed-llm-keys.cjs`). *Nunca commitar o JSON nem as chaves LLM.* |
 | **Chaves LLM (owner)** | ✅ Gravadas (16/08)     | 5 entradas em `users/O4iLGZdl0DYVJfcROrcZl6eFTdA3/llm_keys` (UID real do Auth) cifradas com `deriveUserKey(uid)`: **Groq** (llama-3.3-70b-versatile) ✅ **200 OK** · **OpenCode Zen** (`https://opencode.ai/zen/v1` + nemotron-3.5-lightning-free) ✅ **200 OK** · **NVIDIA** (meta/llama-3.1-8b-instruct) ✅ **200 OK** + NVIDIA antiga (timeout, modelo 3.3) · **DeepSeek** ❌ **402 saldo zerado**. |
 | **Criptografia LLM keys** | ✅ Novo modelo (16/08)   | `security-service.js`: além da master key local (PATs), **chave determinística por UID** (`deriveUserKey` = SHA-256(`caim-llm-v1::` + uid) → AES-GCM 256) — **compatível Admin SDK ↔ app** (`encryptForUser`/`decryptForUser`). `saveSettings`/botão Testar usam `encryptKey()`; `agent-manager.decryptKey(uid, entry)` decifra com uid quando logado. |
-| **Pendências**      | 🔄 **device real ⏳** (PWA iPhone, cadastro/login reais, regras Firestore 2 contas, Lighthouse ≥ 90, modo avião, iPhones), **testar chaves gravadas** (DeepSeek 402 saldo, NVIDIA timeout, OpenCode sem baseUrl), **App Check** (`appCheckSiteKey`), **Node 20 → 22 nas Functions** (decomissiona 2026-10-30), README de instalação | |
+| **Pendências**      | 🔄 **device real ⏳** (PWA iPhone, cadastro/login reais, regras Firestore 2 contas, Lighthouse ≥ 90, modo avião, iPhones), **testar chaves gravadas** (DeepSeek 402 saldo, NVIDIA timeout, OpenCode sem baseUrl), **App Check** (`appCheckSiteKey`), **Node 20 → 22 nas Functions** (decomissiona 2026-10-30), README de instalação, **validar Fase 8 em device (bubble/chips, chitchat, "ver o site")**, **validar S36 em device real (gestor de projetos: Novo/Continuar/Renomear/Excluir, badge publicado, toast persistente do deploy + botão Abrir)** | |
 
-> **Próximo passo:** **homologação final em device real** (PWA iPhone, cadastro/login, regras 2 contas, Lighthouse ≥ 90) + **testar no app real** (Groq/OpenCode/NVIDIA ok — DeepSeek requer saldo) + **App Check** + upgrade das Functions para Node 22. Depois o README de instalação e Go Live oficial.
+> **Próximo passo:** **homologação final em device real** (PWA iPhone, cadastro/login, regras 2 contas, Lighthouse ≥ 90, **gestor de projetos S36** e **toast persistente do deploy S36b** no celular) + **testar no app real** (Groq/OpenCode/NVIDIA ok — DeepSeek requer saldo) + **App Check** + upgrade das Functions para Node 22. Depois o README de instalação e Go Live oficial.
+
+---
+
+## Status Atual — Atualização 18/08 (Fase 9: S37–S42)
+
+> **Recontextualização de 18/08/2026.** O snapshot acima (16/08) permanece válido como base; a partir dele, a **Fase 9 (roadmap pós-Go-Live)** avançou 6 sprints. Tudo commitável localmente; **hosting `caim` redeployado 18/08** → https://caim.web.app.
+
+| Área | Estado (18/08) | Observação |
+| --- | --- | --- |
+| **Fase 9 progresso** | ✅ S37–S42 | **S37** ícones por extensão (`file-icons.js`) · **S38** busca fuzzy + Find/Replace global (`search-panel.js`) · **S39** editor avançado (snippets `snippets.js` + prefs `editor-prefs.js`: tema 16-bit/Claro, fonte mono/pixel, ⚡ na toolbar, Ctrl/⌘+Space) · **S40** templates + dashboard UX (duplicar, pin, tags, busca/ordenação) · **S41** export/import `.zip` + lixeira · **S42** autonomia controlada (permissões ask/review/auto, planos de execução, undo de tool calls). |
+| **VFS** | ✅ **v3** | Dexie v3: `projects` ganhou `pinned`/`tags`; nova tabela **`trashed`** p/ a lixeira (S41). Schema antigo (v2) preservado via `upgrade`. |
+| **Gestor de projetos** | ✅ Dashboard reescrito | `auth-views.js`: "Novo projeto" → action sheet com **Em branco + 5 templates**; card local com Continuar/Fixar/Duplicar/Tags/Exportar .zip/Renomear/Lixeira; busca (nome/tag) + ordenação (recência/nome); importar `.zip`; lixeira com Restaurar/Apagar definitivamente/Esvaziar. |
+| **Agente (autonomia)** | ✅ S42 | `PERMISSION` (ask/review/auto) por projeto em `metadata`; gate `ask` devolve `{ plan }` (checklist no chat + Aprovar tudo/passo via `executePlan`); `undoLastPlan` restaura byte a byte; `vfs:changed` aplica em AUTO sem diálogo de conflito. |
+| **Testes (Vitest)** | ✅ **212 verdes (18/08)** | +9 `project-service` (S40/S41), +9 `agent-manager` (S42), +9 `auth-views` (S40/S41), além de S37/S38/S39 (file-tree +1, search-panel +14, snippets +9, editor-prefs +5, editor +5). Build limpo. |
+| **Build** | ⚠️ novo aviso | Chunk `app-*.js` agora **553KB** (>500KB gzip ~177KB) — Vite emite warning de size. Não bloqueia, mas indica candidato a code-splitting futuro (ver AUDIT.md §10). |
+
+**Feito (18/08):** S37–S42 implementadas, testadas e documentadas (`implementation.md`, `workflows.md`, `PROJECT_STRUCTURE.md`, `AUDIT.md`, `journey.md`). Build limpo. Deploy de produção refeito. **Ajuste UX (18/08):** botões dos cards de projeto em **grid de 2 colunas** ("Continuar" em linha cheia + 6 ações secundárias em 3×2) — mais harmonioso e cabe na tela do celular; **redeploy** após o ajuste.
+
+**Falta fazer (pendências em aberto):**
+1. **S39 pendências:** atalhos de teclado customizáveis e multi-cursor no editor.
+2. **Fase 9 restante — S43–S53:** S43 multi-agente & novos drivers (Kilo/Claude Code, sub-agentes, prompt templates) · S44 multimodal/TTS · S45 memória/RAG por projeto · S46 git avançado (merge/conflito) · S47 deploy contínuo/CI · S48 preview de apps/terminal · S49 cloud sync multi-device · S50 colaboração · S51 onboarding/i18n · S52 diagnóstico/push · S53 segurança/infra (Node 22, CI, auditoria).
+3. **Pendências herdadas da Fase 5/8 (device real):** PWA iPhone, cadastro/login reais, regras Firestore 2 contas, Lighthouse ≥ 90, modo avião, iPhones; **validar Fase 9 em device real** (dashboard S40/S41, permissões/planos/undo S42, busca S38, editor S39).
+4. **Infra:** App Check (`appCheckSiteKey`), **Node 20 → 22 nas Functions** (decomissiona 2026-10-30), unificar toast de deploy duplicado, limpar CSS órfão (`.ide-logo`), verificar pdfjs >1MB em produção, chunk 553KB (code-splitting).
+
+---
+
+## Status Atual — Atualização 21/08 (Fix do dev server + verificação de workflows)
+
+> **Problema reportado (21/08):** o projeto não rodava; salvar e testar APIs não funcionavam. **Causa raiz:** referência morta ao **Framework7** no `manualChunks` do `vite.config.js` (Framework7 não está instalado — foi removido no S10) fazia o dev server **travar no optimizer** ao re-otimizar dependências. **Correção:** removida a referência e limpo o cache `node_modules/.vite/deps`. Ver `AUDIT.md §11`.
+
+| Workflow (21/08) | Resultado |
+| --- | --- |
+| **Dev server** | ✅ inicia e permanece estável (antes travava no optimizer) |
+| **Módulos** | ✅ 14 módulos principais carregam (200 OK) |
+| **Testes** | ✅ **212 verdes** (19 arquivos) |
+| **Build + PWA** | ✅ concluído, SW gerado (49 entradas) |
+| **VFS / Settings / APIs / Git / Projetos / Agente** | ✅ lógica validada por testes unitários |
+
+**Ressalva:** os fluxos de **rede real** (login Firebase, chamadas LLM, deploy GitHub) exigem validação manual no navegador (`http://localhost:5173`) — não são cobertos por testes de terminal.
 
 ---
 
@@ -117,7 +156,7 @@ CAIM is a 100% mobile-first, web-based IDE and AI coding agent interface designe
 | **Version Control** | `isomorphic-git` + VFS adapter (`vfs-fs.js`) | Git offline (init/add/commit/log) + push via `gitCorsProxy`. ✅ (S2) |
 | **Security**        | Web Crypto API                        | AES-GCM para PATs (master key local IndexedDB) e **llm_keys com chave determinística por UID** (compatível Admin SDK ↔ app). ✅ (S2/16-08) |
 | **Icons**           | Lucide Icons (SVG inline)             | Lightweight, scalable SVG integration.                                             |
-| **Testing**         | Vitest + jsdom + `fake-indexeddb`     | **99 testes verdes**; E2E (Playwright) planejado. |
+| **Testing**         | Vitest + jsdom + `fake-indexeddb`     | **141 testes verdes** (16/08); E2E (Playwright) planejado. |
 
 ---
 
@@ -131,10 +170,12 @@ CAIM is a 100% mobile-first, web-based IDE and AI coding agent interface designe
 * **Database Schema (Dexie):**
 
 ```javascript
-db.version(1).stores({
-  files: 'path, content, lastModified, mimeType',
-  directories: 'path, parentId',
-  metadata: 'key, value'
+db.version(2).stores({
+  files: '&path, content, lastModified, mimeType',
+  directories: '&path',
+  metadata: '&key, value',
+  projects: '&id, name, createdAt, lastModified, deployed, url, fileCount',
+  project_files: '&[projectId+path], projectId, path, content, mimeType'
 });
 
 ```
@@ -322,4 +363,4 @@ Referências estudadas em 16/08 e o que já foi incorporado ou ficou para o road
 
 ---
 
-*Last updated: 2026-08-16*
+*Last updated: 2026-08-21*

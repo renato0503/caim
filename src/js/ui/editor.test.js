@@ -89,3 +89,64 @@ describe('CodeEditor.openFile — guard contra duplicação (fix abas)', () => {
     expect(count).toBe(1);
   });
 });
+
+describe('CodeEditor — snippets e preferências (S39)', () => {
+  it('expandSnippetAtCursor expande gatilho JS para o conteúdo', async () => {
+    await vfs.ready;
+    const editor = makeEditor();
+    await vfs.writeFile('app.js', 'const a = clog');
+    await editor.openFile('app.js');
+    editor.view.dispatch({
+      changes: { from: 'const a = clog'.length, insert: '' },
+      selection: { anchor: 'const a = clog'.length },
+    });
+    const ok = editor.expandSnippetAtCursor();
+    expect(ok).toBe(true);
+    expect(editor.view.state.doc.toString()).toContain('console.log();');
+  });
+
+  it('expandSnippetAtCursor não casa gatilho de outra linguagem', async () => {
+    await vfs.ready;
+    const editor = makeEditor();
+    await vfs.writeFile('style.css', 'fn');
+    await editor.openFile('style.css');
+    editor.view.dispatch({
+      changes: { from: 2, insert: '' },
+      selection: { anchor: 2 },
+    });
+    expect(editor.expandSnippetAtCursor()).toBe(false);
+    expect(editor.view.state.doc.toString()).toBe('fn');
+  });
+
+  it('insertSnippet insere no cursor e marca dirty', async () => {
+    await vfs.ready;
+    const editor = makeEditor();
+    await vfs.writeFile('app.js', 'ab');
+    await editor.openFile('app.js');
+    editor.view.dispatch({
+      changes: { from: 1, insert: '' },
+      selection: { anchor: 1 },
+    });
+    editor.insertSnippet({ trigger: 'x', content: 'INSERT' });
+    expect(editor.view.state.doc.toString()).toBe('aINSERTb');
+    const file = editor.openFiles.find((f) => f.path === 'app.js');
+    expect(file.dirty).toBe(true);
+  });
+
+  it('applyPrefs com tema light troca o extension de tema', async () => {
+    await vfs.ready;
+    const editor = makeEditor();
+    editor.applyPrefs({ theme: 'light', fontSize: 16, fontFamily: 'pixel' });
+    expect(editor.prefs.theme).toBe('light');
+    expect(editor.prefs.fontSize).toBe(16);
+  });
+
+  it('savePrefs persiste no metadata do VFS', async () => {
+    await vfs.ready;
+    const editor = makeEditor();
+    await editor.savePrefs({ fontSize: 18 });
+    const rec = await vfs.db.metadata.get('editor-prefs');
+    expect(rec.value.fontSize).toBe(18);
+    expect(editor.prefs.fontFamily).toBe('mono');
+  });
+});

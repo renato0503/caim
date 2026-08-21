@@ -1,12 +1,9 @@
 import { vfs } from '../core/vfs-service.js';
+import { getFileIcon } from './file-icons.js';
 
 const FOLDER_ICON = `
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-  </svg>`;
-const FILE_ICON = `
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>
   </svg>`;
 const CHEVRON = `
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -98,10 +95,11 @@ export class FileTree {
     li.className = 'ft-file';
     li.dataset.path = file.path;
     li.addEventListener('click', () => this.onOpenFile(file.path));
+    const icon = getFileIcon(file.name);
     li.innerHTML = `
       <div class="ft-row">
         <span class="ft-chevron ft-chevron-empty"></span>
-        <span class="ft-icon ft-icon-file">${FILE_ICON}</span>
+        <span class="ft-icon ${icon.cls}">${icon.svg}</span>
         <span class="ft-name">${escapeHtml(file.name)}</span>
         ${this.onPreviewFile ? `<button class="ft-preview" aria-label="Visualizar ${escapeHtml(file.name)}" title="Visualizar">${EYE_ICON}</button>` : ''}
         ${this.onFileActions ? `<button class="ft-more" aria-label="Ações de ${escapeHtml(file.name)}" title="Ações">${MORE_ICON}</button>` : ''}

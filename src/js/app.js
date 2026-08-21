@@ -2,15 +2,18 @@ import '../css/main.css';
 import { registerSW } from 'virtual:pwa-register';
 import { vfs } from './core/vfs-service.js';
 import { FileTree } from './ui/file-tree.js';
+import { SearchPanel } from './ui/search-panel.js';
 import { CodeEditor } from './ui/editor.js';
 import { FileViewer } from './ui/viewer.js';
 import { DiffViewer, applyBlockAccept, applyBlockReject, isMinifiedFile } from './ui/diff-viewer.js';
 import { GitPanel } from './ui/git-panel.js';
 import { AuthViews } from './ui/auth-views.js';
 import { notify } from './ui/notify.js';
-import { agentManager, AGENT_MODE } from './agents/agent-manager.js';
+import { agentManager, AGENT_MODE, PERMISSION } from './agents/agent-manager.js';
+import { detectViewIntent, handleViewIntent, buildFinalText, fileChips, debugRawDetails } from './ui/chat-renderer.js';
 import { authService } from './auth/auth-service.js';
 import { dbService } from './db/db-service.js';
+import { projectService } from './core/project-service.js';
 import { deployFunctionUrl } from './firebase/firebase-config.js';
 
 const appEl = document.getElementById('app');
@@ -30,6 +33,7 @@ const $deployBtn = document.getElementById('deploy-btn');
 
 const sheet = document.getElementById('bottom-sheet');
 const drawer = document.getElementById('explorer-drawer');
+const searchDrawer = document.getElementById('search-drawer');
 const backdrop = document.getElementById('drawer-backdrop');
 const handle = document.getElementById('bs-handle');
 
@@ -67,7 +71,16 @@ function openDrawer() {
 
 function closeDrawer() {
   drawer.classList.remove('open');
+  searchDrawer?.classList.remove('open');
   backdrop.classList.remove('show');
+}
+
+// S38: drawer de busca (go-to-file + find & replace)
+function openSearchDrawer() {
+  drawer.classList.remove('open');
+  searchDrawer?.classList.add('open');
+  backdrop.classList.add('show');
+  searchPanel?.refreshPaths();
 }
 
 // Atualiza a altura do app para o visualViewport (teclado iOS abre/fecha).
@@ -104,6 +117,9 @@ document.querySelectorAll('.ab-item').forEach((btn) => {
     } else if (act === 'explorer') {
       if (drawer.classList.contains('open')) closeDrawer();
       else { setActivity('explorer'); openDrawer(); }
+    } else if (act === 'search') {
+      if (searchDrawer?.classList.contains('open')) closeDrawer();
+      else { setActivity('search'); openSearchDrawer(); }
     } else if (act === 'settings') {
       if (!authViews?.user) return;
       try {
@@ -180,6 +196,18 @@ const tree = new FileTree({
     closeDrawer();
   },
   onFileActions: (file) => showFileActions(file),
+});
+
+// S38: busca fuzzy (go-to-file) + find & replace global
+const searchPanel = new SearchPanel({
+  container: document.getElementById('search-panel'),
+  notify,
+  onOpenFile: (path) => {
+    editor.openFile(path);
+    collapseSheet();
+    closeDrawer();
+  },
+  onClose: closeDrawer,
 });
 
 // ============================================================
@@ -306,6 +334,32 @@ document.getElementById('viewer-open-editor').addEventListener('click', () => {
   }
 });
 
+// S42 — toggle de autonomia do agente (perguntar/revisar/auto), por projeto.
+const $permToggle = document.getElementById('perm-toggle');
+function syncPermButtons() {
+  const perm = agentManager.getPermission();
+  $permToggle?.querySelectorAll('.perm-btn').forEach((b) => {
+    b.classList.toggle('perm-active', b.dataset.perm === perm);
+  });
+}
+$permToggle?.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.perm-btn');
+  if (!btn) return;
+  const mode = btn.dataset.perm;
+  try {
+    await agentManager.setPermissionForProject(agentManager.activeProjectId, mode);
+    syncPermButtons();
+    notify.toast(
+      mode === 'ask' ? 'Agente agora PERGUNTA antes de cada alteração.'
+      : mode === 'auto' ? 'Agente executa em AUTO (sem pedir confirmação).'
+      : 'Agente executa e mostra no Diff para REVISÃO.',
+      { position: 'center' }
+    );
+  } catch (err) {
+    notify.toast(`Erro: ${err.message}`, { position: 'center' });
+  }
+});
+
 // ============================================================
 // VFS events
 // ============================================================
@@ -319,7 +373,12 @@ vfs.events.on('vfs:changed', ({ type, path }) => {
   }
   // S23/J4: conflito de edição — a IA atualizou um arquivo que o usuário
   // está editando (dirty). Não sobrescrever silenciosamente; pedir escolha.
+  // S42: em modo `auto`, aplica direto (sem diálogo).
   if (type === 'update' && editor.isDirty(path)) {
+    if (agentManager.getPermission() === PERMISSION.AUTO) {
+      editor.openFile(path, { force: true });
+      return;
+    }
     notify.confirm(
       `O agente modificou "${path}" enquanto você o editava.\n\nDeseja manter suas alterações locais?`,
       'Conflito de edição',
@@ -462,6 +521,136 @@ async function loadChatHistory() {
   }
 }
 
+// ============================================================
+// S31/S34 — Renderização do chat e intenção de visualização
+// (detectViewIntent / handleViewIntent / buildFinalText / fileChips /
+//  debugRawDetails) vivem em ui/chat-renderer.js (testável).
+// ============================================================
+
+// ============================================================
+// S42 — Planos de execução (modo "Perguntar") e undo de tool calls
+// ============================================================
+
+// Executa um resultado de tools e renderiza no chat (chips + revert + diff).
+async function applyExecutionResult(bubble, result) {
+  bubble.appendChild(
+    fileChips(result.files || [], {
+      onOpen: (path) => {
+        try {
+          editor.openFile(path);
+          collapseSheet();
+        } catch (err) {
+          notify.toast(err.message);
+        }
+      },
+      onPreview: (path) => {
+        try {
+          viewer.openFile(path);
+          showPane('preview');
+          closeDrawer();
+        } catch (err) {
+          notify.toast(err.message);
+        }
+      },
+    })
+  );
+  // S42: em modo `auto`, aceita o diff imediatamente (sem revisão pendente).
+  if (agentManager.getPermission() === PERMISSION.AUTO) {
+    for (const path of result.files || []) {
+      try {
+        if (editor.isOpen(path)) await editor.save(path);
+      } catch (err) {
+        // arquivo não aberto — segue
+      }
+    }
+  }
+  if ((result.files || []).length) {
+    const undoBtn = document.createElement('button');
+    undoBtn.className = 'plan-undo-btn';
+    undoBtn.textContent = '↩ Reverter alteração da IA';
+    undoBtn.addEventListener('click', async () => {
+      undoBtn.disabled = true;
+      undoBtn.textContent = 'Revertendo…';
+      try {
+        const restored = await agentManager.undoLastPlan();
+        for (const path of result.files || []) {
+          if (editor.isOpen(path)) await editor.openFile(path, { force: true });
+        }
+        await tree.render();
+        refreshDiff();
+        notify.toast(`Alterações revertidas: ${restored.length} arquivo(s)`, { position: 'center' });
+      } catch (err) {
+        notify.toast(`Erro ao reverter: ${err.message}`, { position: 'center' });
+      }
+    });
+    bubble.appendChild(undoBtn);
+  }
+}
+
+// Renderiza o checklist do plano com "Aprovar passo" e "Aprovar tudo".
+function renderPlanChecklist(bubble, plan) {
+  const wrap = document.createElement('div');
+  wrap.className = 'plan-check';
+  const title = document.createElement('div');
+  title.className = 'plan-title';
+  title.textContent = `Plano de ${(plan.tools || []).length} passo(s) — aprovar antes de executar:`;
+  wrap.appendChild(title);
+  const rows = [];
+  (plan.tools || []).forEach((t, i) => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'plan-step';
+    const what = t.tool === 'write_file' ? 'criar/editar' : t.tool;
+    row.textContent = `${i + 1}. ${what} ${t.args?.path || ''}`;
+    row.addEventListener('click', async () => {
+      row.disabled = true;
+      await runPlanStep(plan, i, row);
+    });
+    rows.push(row);
+    wrap.appendChild(row);
+  });
+  const approveAll = document.createElement('button');
+  approveAll.type = 'button';
+  approveAll.className = 'plan-approve-all';
+  approveAll.textContent = '✔ Aprovar tudo';
+  approveAll.addEventListener('click', async () => {
+    approveAll.disabled = true;
+    rows.forEach((r) => (r.disabled = true));
+    await runPlanAll(plan);
+  });
+  wrap.appendChild(approveAll);
+  bubble.appendChild(wrap);
+}
+
+async function runPlanStep(plan, i, row) {
+  try {
+    const res = await agentManager.executePlan(plan, { only: i });
+    row.classList.add('plan-done');
+    row.textContent = `${i + 1}. ✔ executado`;
+    notify.toast(`Passo ${i + 1} executado — revise no Diff.`, { position: 'center' });
+    const stillPending = document.querySelectorAll('.plan-check .plan-step:not(.plan-done)').length;
+    if (stillPending === 0) {
+      await applyExecutionResult(row.closest('.message-bubble'), res);
+      refreshDiff();
+    }
+  } catch (err) {
+    notify.toast(`Erro no passo: ${err.message}`, { position: 'center' });
+    row.disabled = false;
+  }
+}
+
+async function runPlanAll(plan) {
+  try {
+    const res = await agentManager.executePlan(plan);
+    const bubble = document.querySelector('.plan-check')?.closest('.message-bubble');
+    if (bubble) await applyExecutionResult(bubble, res);
+    refreshDiff();
+    notify.toast('Plano executado — revise no Diff.', { position: 'center' });
+  } catch (err) {
+    notify.toast(`Erro ao executar o plano: ${err.message}`, { position: 'center' });
+  }
+}
+
 async function sendMessage() {
   const text = $chatInput.value.trim();
   if (!text) return;
@@ -483,46 +672,67 @@ async function sendMessage() {
   $chatStop.classList.remove('hidden');
   agentManager.setContext(editor.getOpenFilesContext());
   try {
-    const result = await agentManager.sendPrompt({
-      text,
-      uid: authViews?.user?.uid || null,
-      signal: currentAbort.signal,
-      onThinking: thinkOn
-        ? (chunk) => {
-            thinking += chunk;
-            ensureThinkingBox(reply, thinking);
-          }
-        : undefined,
-      onChunk: (chunk) => {
-        buf += chunk;
-        textEl.textContent = buf;
-        $chatMessages.scrollTop = $chatMessages.scrollHeight;
-      },
-    });
-    const truncatedNote = result.truncated ? '\n\n⚠ **Resposta truncada** — o modelo cortou a saída no meio.' : '';
-    const binaryNote = result.binaryWarnings?.length ? `\n\n⚠ Binário ignorado na geração: ${result.binaryWarnings.join(', ')}. Use o upload.` : '';
-    const costNote = result.approxTokens ? `\n\n*~${result.approxTokens} tokens estimados nesta geração.*` : '';
-    const extra = `${truncatedNote}${binaryNote}${result.files?.length ? `\n\nArquivos criados: ${result.files.join(', ')}` : ''}${costNote}`;
-    finalText = `${buf || result.message}${extra}`;
-    textEl.textContent = '';
-    renderMarkdownTo(textEl, finalText);
-    // S22: "Continuar geração" quando a resposta foi truncada no meio de um arquivo
-    if (result.truncated) {
-      const contBtn = document.createElement('button');
-      contBtn.className = 'chat-continue-btn';
-      contBtn.textContent = 'Continuar geração';
-      contBtn.addEventListener('click', () => {
-        const lastFile = result.files?.[result.files.length - 1];
-        const tail = lastFile ? ` Continue o arquivo ${lastFile} de onde parou.` : '';
-        $chatInput.value = `${text}${tail}`;
-        autoResize();
-        sendMessage();
+    // S33: passa o histórico recente + lista de arquivos do VFS como contexto.
+    const filesList = (await vfs.listDir('')).files.map((f) => f.path);
+    // S34: intenção de "ver o site" → abre o Preview, não regenera arquivos.
+    if (detectViewIntent(text)) {
+      finalText = await handleViewIntent(text, filesList, {
+        onPreview: (path) => {
+          viewer.openFile(path);
+          showPane('preview');
+          closeDrawer();
+        },
       });
+      renderMarkdownTo(textEl, finalText);
+    } else {
+      const result = await agentManager.sendPrompt({
+        text,
+        uid: authViews?.user?.uid || null,
+        signal: currentAbort.signal,
+        history: chatHistory.slice(-8),
+        filesList,
+        onThinking: thinkOn
+          ? (chunk) => {
+              thinking += chunk;
+              ensureThinkingBox(reply, thinking);
+            }
+          : undefined,
+        onChunk: (chunk) => {
+          buf += chunk;
+          textEl.textContent = buf;
+          $chatMessages.scrollTop = $chatMessages.scrollHeight;
+        },
+      });
+      // S31: texto principal = message extraído (nunca o JSON cru do stream).
+      finalText = buildFinalText(result, text);
+      textEl.textContent = '';
+      renderMarkdownTo(textEl, finalText);
       const bubble = reply.querySelector('.message-bubble');
-      bubble.appendChild(contBtn);
-    }
-    if (thinkOn && (thinking || result.thinking)) {
-      ensureThinkingBox(reply, thinking || result.thinking, true);
+      // S42: modo `ask` → checklist de aprovação; senão → chips + undo + diff.
+      if (result.plan) {
+        renderPlanChecklist(bubble, result.plan);
+      } else {
+        await applyExecutionResult(bubble, result);
+      }
+      // S31: JSON cru (se houver) vai em <details> de debug via textContent.
+      if (buf && result.message && !result.truncated) bubble.appendChild(debugRawDetails(buf));
+      // S22: "Continuar geração" quando a resposta foi truncada no meio de um arquivo
+      if (result.truncated) {
+        const contBtn = document.createElement('button');
+        contBtn.className = 'chat-continue-btn';
+        contBtn.textContent = 'Continuar geração';
+        contBtn.addEventListener('click', () => {
+          const lastFile = result.files?.[result.files.length - 1];
+          const tail = lastFile ? ` Continue o arquivo ${lastFile} de onde parou.` : '';
+          $chatInput.value = `${text}${tail}`;
+          autoResize();
+          sendMessage();
+        });
+        bubble.appendChild(contBtn);
+      }
+      if (thinkOn && (thinking || result.thinking)) {
+        ensureThinkingBox(reply, thinking || result.thinking, true);
+      }
     }
   } catch (err) {
     if (err?.name === 'AbortError') {
@@ -562,6 +772,11 @@ function ensureThinkingBox(msgEl, text, done = false) {
   body.textContent = text;
   details.open = !done;
 }
+
+// ============================================================
+// S31 — Renderização do chat (chips, debug JSON e texto final)
+// agora vive em ui/chat-renderer.js (ver imports no topo).
+// ============================================================
 
 async function renderMarkdownTo(el, text) {
   try {
@@ -673,16 +888,38 @@ async function deployProject() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Falha no deploy');
     await dbService.addProject(authViews.user.uid, { name: projectName, url: json.url, fileCount: files.length });
-    // S24: espera o Pages ficar online antes do toast de sucesso
-    notify.toast('O GitHub está construindo seu MVP… (até 5min)', { position: 'center' });
+    // S36: salva o snapshot do projeto ativo (ou cria um novo) e marca como publicado
+    try {
+      const activeId = await projectService.getActiveProjectId();
+      if (activeId) {
+        await projectService.saveProjectSnapshot(activeId);
+        await projectService.markDeployed(activeId, json.url);
+      } else {
+        const proj = await projectService.createFromWorkspace(projectName);
+        await projectService.markDeployed(proj.id, json.url);
+      }
+    } catch (err) {
+      // falha ao salvar local não impede o deploy
+    }
+    // S24: espera o Pages ficar online antes do toast de sucesso.
+    // Toast persistente (duration:0): não some enquanto o Pages compila.
+    const buildingToast = notify.toast('O GitHub está construindo seu MVP… (até 5min)', { position: 'center', duration: 0 });
     const live = await waitForPagesLive(json.url);
+    buildingToast.close();
     if (!live) {
-      notify.toast(`Deploy enviado, mas o Pages ainda está construindo. ${json.url}`, { position: 'center' });
+      notify.toast(`Deploy enviado, mas o Pages ainda está construindo. ${json.url}`, {
+        position: 'center',
+        duration: 0,
+        button: { text: 'Abrir', onClick: () => window.open(json.url, '_blank') },
+      });
       return json.url;
     }
-    notify.toast(`MVP publicado! ${json.url}`, {
-      button: { text: 'Abrir', onClick: () => window.open(json.url, '_blank') },
+    // Sucesso persistente: o usuário tem tempo de clicar em "Abrir". A URL
+    // também fica salva no dashboard (seção "Publicados no GitHub").
+    notify.toast(`MVP publicado! Ficou salvo no dashboard.`, {
       position: 'center',
+      duration: 0,
+      button: { text: 'Abrir', onClick: () => window.open(json.url, '_blank') },
     });
     // S29: conquista + partículas de deploy
     notify.achievement({ title: 'DEPLOY DESBLOQUEADO!', message: json.url });
@@ -701,6 +938,7 @@ async function resetWorkspace() {
   const ok = await confirmDialog('Apagar todos os arquivos (README, src, uploads, .git) e começar um novo MVP?', 'Novo projeto');
   if (!ok) return;
   try {
+    await projectService.setActiveProject('');
     const files = await vfs.listAllFiles();
     for (const p of files) {
       if (p.startsWith('.git/')) continue;
@@ -761,18 +999,41 @@ async function bootstrap() {
   await tree.render();
   editor.setStatus('Pronto');
 
+  // S36: abre a IDE já com o workspace do projeto restaurado.
+  const openIde = async ({ projectId } = {}) => {
+    if (projectId) {
+      try {
+        await projectService.openProject(projectId);
+      } catch (err) {
+        notify.toast(`Erro ao carregar projeto: ${err.message}`, { position: 'center' });
+      }
+    }
+    agentManager.mode = authViews.user && !authViews.devMode ? AGENT_MODE.LIVE : AGENT_MODE.DEMO;
+    // S42: permissão por projeto (ask/review/auto) persistida em metadata.
+    const activeId = projectId || (await projectService.getActiveProjectId());
+    agentManager.setActiveProjectId(activeId);
+    await agentManager.loadPermission(activeId);
+    syncPermButtons();
+    authViews.show('ide');
+    for (const f of [...editor.openFiles]) await editor.forceRemove(f.path);
+    await tree.render();
+    $chatMessages.innerHTML = '';
+    const history = await loadChatHistory();
+    chatHistory = history;
+    for (const entry of history) {
+      addMessage(entry.text, { type: entry.type === 'user' ? 'user' : 'received' });
+    }
+    gitPanel.refresh();
+  };
+
   authViews = new AuthViews({
     notify,
-    onEnterIde: async () => {
-      agentManager.mode = authViews.user && !authViews.devMode ? AGENT_MODE.LIVE : AGENT_MODE.DEMO;
+    onEnterIde: () => openIde(),
+    onOpenProject: async (id) => {
+      await openIde({ projectId: id });
       authViews.show('ide');
-      $chatMessages.innerHTML = '';
-      const history = await loadChatHistory();
-      chatHistory = history;
-      for (const entry of history) {
-        addMessage(entry.text, { type: entry.type === 'user' ? 'user' : 'received' });
-      }
     },
+    onEditorPrefsChange: (prefs) => editor.applyPrefs(prefs),
   });
   await authViews.init();
 }

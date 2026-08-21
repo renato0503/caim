@@ -73,14 +73,28 @@
 <img class="auth-logo" src="/assets/icons/logo_caim.svg" alt="CAIM" fetchpriority="high">
           <h1 id="dashboard-user-name" class="dash-title">Bem-vindo(a)</h1>
         </div>
-        <p class="dash-subtitle">Seus MVPs publicados</p>
+        <p class="dash-subtitle">Seus projetos</p>
         <div id="dashboard-verify" class="auth-note hidden">
           <span>Email não verificado.</span>
           <button id="dashboard-verify-btn" class="auth-link" type="button">Reenviar link</button>
         </div>
+        <h2 class="dash-section-title">Projetos locais</h2>
+        <div class="dash-toolbar">
+          <input id="dashboard-search" class="dash-search" placeholder="Buscar por nome ou tag…" autocomplete="off">
+          <select id="dashboard-sort" class="dash-sort" aria-label="Ordenar projetos">
+            <option value="recent">Recência</option>
+            <option value="name">Nome A→Z</option>
+          </select>
+        </div>
+        <div id="dashboard-local-projects" class="dash-projects"></div>
+        <div id="dashboard-trash" class="dash-projects hidden"></div>
+        <h2 class="dash-section-title">Publicados no GitHub</h2>
         <div id="dashboard-projects" class="dash-projects"></div>
         <div class="dash-actions">
+          <button id="dashboard-new-project" class="dash-btn">Novo projeto</button>
           <button id="dashboard-open-ide" class="dash-btn dash-primary">Abrir IDE</button>
+          <button id="dashboard-import-zip" class="dash-btn">Importar .zip</button>
+          <button id="dashboard-trash-btn" class="dash-btn">Lixeira</button>
           <button id="dashboard-settings-btn" class="dash-btn">Configurar APIs</button>
           <button id="dashboard-logout" class="dash-btn">Sair</button>
         </div>
@@ -99,6 +113,21 @@
         </div>
         <p class="dash-subtitle">Até 3 chaves com failover (prioridade 1 → 2 → 3). As chaves são cifradas.</p>
         <div id="settings-list" class="settings-list"></div>
+        <h2 class="dash-section-title">Editor</h2>
+        <div class="settings-editor">
+          <label class="settings-editor-row">
+            <span>Tema</span>
+            <select id="prefs-theme"></select>
+          </label>
+          <label class="settings-editor-row">
+            <span>Tamanho da fonte</span>
+            <select id="prefs-font-size"></select>
+          </label>
+          <label class="settings-editor-row">
+            <span>Fonte</span>
+            <select id="prefs-font-family"></select>
+          </label>
+        </div>
         <div class="dash-actions">
           <button id="settings-save" class="dash-btn dash-primary">Salvar</button>
           <button id="settings-update" class="dash-btn">Atualizar para a última versão</button>
@@ -152,6 +181,9 @@
         <button class="ab-item" data-activity="explorer" aria-label="Explorer" title="Explorer">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
         </button>
+        <button class="ab-item" data-activity="search" aria-label="Buscar" title="Buscar arquivos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
         <button class="ab-item" data-activity="settings" aria-label="Configurações" title="Configurações">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         </button>
@@ -179,6 +211,11 @@
           <header class="pane-header chat-options">
             <span class="pane-title">Chat</span>
             <div class="chat-options-right">
+              <div class="perm-toggle" id="perm-toggle" title="Autonomia do agente neste projeto">
+                <button type="button" class="perm-btn" data-perm="ask">Perguntar</button>
+                <button type="button" class="perm-btn perm-active" data-perm="review">Revisar</button>
+                <button type="button" class="perm-btn" data-perm="auto">Auto</button>
+              </div>
               <label class="think-toggle" title="Mostrar o raciocínio do modelo">
                 <input type="checkbox" id="think-toggle">
                 <span>Pensar</span>
@@ -234,6 +271,11 @@
         </div>
       </header>
       <div class="file-tree-container" id="file-tree"></div>
+    </aside>
+
+    <!-- ==================== SEARCH DRAWER (S38) ==================== -->
+    <aside class="search-drawer" id="search-drawer" aria-label="Buscar arquivos">
+      <div class="search-panel-container" id="search-panel"></div>
     </aside>
     <div class="drawer-backdrop" id="drawer-backdrop"></div>
 

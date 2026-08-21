@@ -20,12 +20,9 @@ export default defineConfig({
         app: resolve(__dirname, 'app.html'),
       },
       output: {
-        // S10: só o Framework7 vira chunk fixo. O resto usa code-splitting
-        // nativo (dinâmico) — langs, marked, xlsx, firebase, isomorphic-git
-        // já são lazy e não podem ser forçados para um vendor único.
-        manualChunks(id) {
-          if (id.includes('node_modules/framework7')) return 'framework7';
-        },
+        // S10: code-splitting nativo (dinâmico) — langs, marked, xlsx,
+        // firebase, isomorphic-git já são lazy e não podem ser forçados
+        // para um vendor único. Framework7 foi removido do projeto.
       },
     },
   },

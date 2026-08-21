@@ -83,4 +83,26 @@ describe('FileTree — Explorer (S3/S16)', () => {
     expect(container.querySelector('img[onerror]')).toBeNull();
     expect(container.textContent).toContain('onerror');
   });
+
+  it('S37: ícone específico por extensão e fallback para desconhecidos', async () => {
+    await vfs.writeFile('index.html', '<h1>oi</h1>');
+    await vfs.writeFile('style.css', 'body{}');
+    await vfs.writeFile('app.js', 'console.log(1)');
+    await vfs.writeFile('data.json', '{}');
+    await vfs.writeFile('README.md', '# doc');
+    await vfs.writeFile('foto.png', 'x');
+    await vfs.writeFile('relatorio.pdf', 'x');
+    await vfs.writeFile('.gitignore', 'node_modules');
+    await vfs.writeFile('desconhecido.xyz', 'x');
+    const { container } = await makeTree();
+    expect(container.querySelector('.ft-file[data-path="index.html"] .ft-icon-html')).not.toBeNull();
+    expect(container.querySelector('.ft-file[data-path="style.css"] .ft-icon-css')).not.toBeNull();
+    expect(container.querySelector('.ft-file[data-path="app.js"] .ft-icon-js')).not.toBeNull();
+    expect(container.querySelector('.ft-file[data-path="data.json"] .ft-icon-json')).not.toBeNull();
+    expect(container.querySelector('.ft-file[data-path="README.md"] .ft-icon-md')).not.toBeNull();
+    expect(container.querySelector('.ft-file[data-path="foto.png"] .ft-icon-img')).not.toBeNull();
+    expect(container.querySelector('.ft-file[data-path="relatorio.pdf"] .ft-icon-pdf')).not.toBeNull();
+    expect(container.querySelector('.ft-file[data-path=".gitignore"] .ft-icon-git')).not.toBeNull();
+    expect(container.querySelector('.ft-file[data-path="desconhecido.xyz"] .ft-icon-file')).not.toBeNull();
+  });
 });

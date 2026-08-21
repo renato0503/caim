@@ -54,11 +54,17 @@ export const dbService = {
 
   async listProjects(ownerId) {
     const d = await getDb();
-    const { collection, query, where, orderBy, getDocs } = await import('firebase/firestore');
-    const snap = await getDocs(
-      query(collection(d, 'projects'), where('ownerId', '==', ownerId), orderBy('createdAt', 'desc'))
-    );
-    return snap.docs.map((s) => ({ id: s.id, ...s.data() }));
+    const { collection, query, where, getDocs } = await import('firebase/firestore');
+    // Sem orderBy para não exigir índice composto no Firestore —
+    // ordenação por createdAt é feita no cliente (a lista do usuário é pequena).
+    const snap = await getDocs(query(collection(d, 'projects'), where('ownerId', '==', ownerId)));
+    return snap.docs
+      .map((s) => ({ id: s.id, ...s.data() }))
+      .sort((a, b) => {
+        const ta = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds * 1000 ?? 0;
+        const tb = b.createdAt?.toMillis?.() ?? b.createdAt?.seconds * 1000 ?? 0;
+        return tb - ta;
+      });
   },
 
   async renameProject(projectId, name) {

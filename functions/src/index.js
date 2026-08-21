@@ -75,34 +75,37 @@ exports.githubDeployProxy = onRequest({ cors: true, maxInstances: 20 }, async (r
     } catch (err) {
       if (err.status !== 422) throw err; // 422 = já existe (prossegue)
     }
+    const { data: repoMeta } = await octokit.rest.repos.get({ owner, repo: projectName });
+    const defaultBranch = repoMeta.default_branch || 'main';
 
-    // 2) Escrever arquivos via Git API (blobs → tree → commit → ref)
-    const blobs = await Promise.all(
-      files.map(async ({ path, content }) => {
-        const { data } = await octokit.rest.git.createBlob({
-          owner,
-          repo: projectName,
-          content: String(content),
-          encoding: 'utf-8',
-        });
-        return { path, sha: data.sha, mode: '100644', type: 'blob' };
-      })
-    );
-    const { data: headRef } = await octokit.rest.git.getRef({ owner, repo: projectName, ref: 'heads/main' });
-    const baseTree = (await octokit.rest.git.getCommit({ owner, repo: projectName, commit_sha: headRef.object.sha })).data.tree.sha;
-    const { data: tree } = await octokit.rest.git.createTree({ owner, repo: projectName, base_tree: baseTree, tree: blobs });
-    const { data: commit } = await octokit.rest.git.createCommit({
-      owner,
-      repo: projectName,
-      message: 'Initial MVP (CAIM)',
-      tree: tree.sha,
-      parents: [headRef.object.sha],
-    });
-    await octokit.rest.git.updateRef({ owner, repo: projectName, ref: 'heads/main', sha: commit.sha, force: true });
+    // 2) Escrever arquivos via Contents API (createOrUpdateFileContents).
+    //    Motivo: a Git Data API (createBlob/createTree/createCommit) retorna
+    //    409 "Git Repository is empty" em repos recém-criados (sem nenhum
+    //    commit) — não funciona nem com createTree([]). A Contents API cria o
+    //    commit inicial automaticamente e também atualiza arquivos existentes.
+    for (const { path, content } of files) {
+      let existingSha;
+      try {
+        const { data } = await octokit.rest.repos.getContent({ owner, repo: projectName, path, ref: defaultBranch });
+        if (Array.isArray(data)) throw new Error(`path é um diretório: ${path}`);
+        existingSha = data.sha;
+      } catch (err) {
+        if (err.status !== 404) throw err; // 404 = arquivo novo (sem sha)
+      }
+      await octokit.rest.repos.createOrUpdateFileContents({
+        owner,
+        repo: projectName,
+        path,
+        message: `MVP (CAIM): ${path}`,
+        content: Buffer.from(String(content), 'utf8').toString('base64'),
+        branch: defaultBranch,
+        ...(existingSha ? { sha: existingSha } : {}),
+      });
+    }
 
-    // 3) Ativar GitHub Pages na branch main
+    // 3) Ativar GitHub Pages na branch default
     try {
-      await octokit.rest.repos.createPagesSite({ owner, repo: projectName, source: { branch: 'main', path: '/' } });
+      await octokit.rest.repos.createPagesSite({ owner, repo: projectName, source: { branch: defaultBranch, path: '/' } });
     } catch (err) {
       if (err.status !== 409) throw err; // 409 = já ativo
     }

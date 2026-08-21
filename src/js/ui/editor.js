@@ -4,8 +4,35 @@ import { history, defaultKeymap, historyKeymap, indentWithTab, undo, redo } from
 import { indentOnInput, bracketMatching } from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { vfs } from '../core/vfs-service.js';
+import { loadEditorPrefs, saveEditorPrefs, DEFAULT_PREFS } from '../core/editor-prefs.js';
+import { findSnippet, wordBeforeCursor, langFromPath } from '../core/snippets.js';
 
 const SAVE_DEBOUNCE = 800;
+
+// S39 — tema claro (EditorView.theme leve) usado quando prefs.theme === 'light'.
+const lightTheme = EditorView.theme(
+  {
+    '&': { backgroundColor: '#ffffff', color: '#0f172a' },
+    '.cm-gutters': { backgroundColor: '#f1f5f9', color: '#64748b', borderRight: '1px solid #e2e8f0' },
+    '.cm-activeLine': { backgroundColor: 'rgba(13,148,136,0.08)' },
+    '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
+      backgroundColor: 'rgba(13,148,136,0.25)',
+    },
+  },
+  { dark: false }
+);
+
+function fontTheme(fontSize, fontFamily) {
+  const family =
+    fontFamily === 'pixel'
+      ? 'var(--font-pixel)'
+      : fontFamily === 'mono' || !fontFamily
+        ? 'var(--font-code)'
+        : fontFamily;
+  return EditorView.theme({
+    '&': { fontSize: `${Number(fontSize) || 14}px`, fontFamily: family },
+  });
+}
 
 // S10: setup mínimo (sem autocomplete/lint/search — recorte grande de bundle).
 // A toolbar flutuante já cobre parênteses/chaves/tab no iOS.
@@ -68,10 +95,15 @@ export class CodeEditor {
     this.openFiles = []; // { path, content, savedContent, selection, scrollTop, dirty }
     this.activePath = null;
     this.langCompartment = new Compartment();
+    this.themeCompartment = new Compartment();
+    this.fontCompartment = new Compartment();
+    this.snippetKeymap = new Compartment();
+    this.prefs = { ...DEFAULT_PREFS };
     this.saveTimers = new Map();
     this.saving = new Set();
     this.createView();
     this.setupFloatingToolbar();
+    this.initPrefs();
   }
 
   createView() {
@@ -82,6 +114,11 @@ export class CodeEditor {
           MINIMAL_SETUP,
           oneDark,
           this.langCompartment.of([]),
+          this.themeCompartment.of(oneDark),
+          this.fontCompartment.of(fontTheme(14, 'mono')),
+          this.snippetKeymap.of(
+            keymap.of([{ key: 'Mod-Space', run: () => this.expandSnippetAtCursor() }])
+          ),
           EditorView.updateListener.of((update) => {
             if (update.docChanged && this.activePath) {
               const programmatic = update.transactions.some(
@@ -378,6 +415,192 @@ export class CodeEditor {
   }
 
   // ============================================================
+  // S39 — Preferências do editor (tema / fonte / snippets)
+  // ============================================================
+
+  currentLang() {
+    return this.activePath ? langFromPath(this.activePath) : '';
+  }
+
+  async initPrefs() {
+    this.prefs = await loadEditorPrefs();
+    this.applyPrefs(this.prefs);
+  }
+
+  async getPrefs() {
+    return { ...this.prefs };
+  }
+
+  applyPrefs(prefs) {
+    this.prefs = { ...DEFAULT_PREFS, ...(prefs || {}), snippets: prefs?.snippets || [] };
+    const themeExt = this.prefs.theme === 'light' ? lightTheme : oneDark;
+    this.view.dispatch({
+      effects: [
+        this.themeCompartment.reconfigure(themeExt),
+        this.fontCompartment.reconfigure(fontTheme(this.prefs.fontSize, this.prefs.fontFamily)),
+      ],
+    });
+  }
+
+  async savePrefs(patch) {
+    this.prefs = { ...this.prefs, ...(patch || {}) };
+    this.applyPrefs(this.prefs);
+    await saveEditorPrefs(this.prefs);
+    return { ...this.prefs };
+  }
+
+  // Expande a palavra antes do cursor se ela casar com um snippet (Mod-Space /
+  // atalho do teclado externo). Retorna o snippet aplicado ou null.
+  expandSnippetAtCursor() {
+    if (!this.activePath) return false;
+    const { from, to } = this.view.state.selection.main;
+    const { word, from: wordFrom } = wordBeforeCursor(this.view.state.doc, from);
+    if (!word) return false;
+    const snippet = findSnippet(word, this.currentLang(), this.prefs.snippets);
+    if (!snippet) return false;
+    this.view.dispatch({
+      changes: { from: wordFrom, to, insert: snippet.content },
+      annotations: Transaction.userEvent.of('programmatic'),
+    });
+    this.setStatus(`Snippet: ${snippet.description || snippet.trigger}`);
+    this.markDirty(this.activePath);
+    return true;
+  }
+
+  insertSnippet(snippet) {
+    if (!this.activePath) return false;
+    const { from } = this.view.state.selection.main;
+    this.view.dispatch({
+      changes: { from, insert: snippet.content },
+      selection: { anchor: from + snippet.content.length },
+      scrollIntoView: true,
+      annotations: Transaction.userEvent.of('programmatic'),
+    });
+    this.markDirty(this.activePath);
+    return true;
+  }
+
+  // Picker de snippets: lista os disponíveis para a linguagem atual (botão ⚡
+  // da toolbar flutuante + customizados). Tocar insere no cursor.
+  openSnippetPicker() {
+    this.closeSnippetPicker();
+    if (!this.activePath) return;
+    const lang = this.currentLang();
+    const all = [...(this.prefs.snippets || []), ...DEFAULT_SNIPPETS];
+    const visible = all.filter((s) => !s.lang || s.lang === '*' || s.lang === lang);
+    const picker = document.createElement('div');
+    picker.className = 'snippet-picker';
+    picker.id = 'snippet-picker';
+    const title = document.createElement('div');
+    title.className = 'snippet-picker-title';
+    title.textContent = `Snippets (${lang || 'qualquer'})`;
+    picker.appendChild(title);
+    if (!visible.length) {
+      const empty = document.createElement('div');
+      empty.className = 'snippet-picker-empty';
+      empty.textContent = 'Nenhum snippet para esta linguagem.';
+      picker.appendChild(empty);
+    }
+    for (const s of visible) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'snippet-picker-item';
+      row.addEventListener('click', () => {
+        this.insertSnippet(s);
+        this.closeSnippetPicker();
+        this.view.focus();
+      });
+      const trigger = document.createElement('span');
+      trigger.className = 'snippet-picker-trigger';
+      trigger.textContent = s.trigger;
+      const desc = document.createElement('span');
+      desc.className = 'snippet-picker-desc';
+      desc.textContent = s.description || s.trigger;
+      row.append(trigger, desc);
+      picker.appendChild(row);
+    }
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'snippet-picker-add';
+    add.textContent = '+ Novo snippet';
+    add.addEventListener('click', async () => {
+      this.closeSnippetPicker();
+      await this.addCustomSnippet();
+    });
+    picker.appendChild(add);
+    document.body.appendChild(picker);
+    setTimeout(() => {
+      document.addEventListener('click', this._onSnippetPickerDocClick = () => this.closeSnippetPicker(), { once: true });
+    }, 0);
+  }
+
+  closeSnippetPicker() {
+    document.getElementById('snippet-picker')?.remove();
+    if (this._onSnippetPickerDocClick) {
+      document.removeEventListener('click', this._onSnippetPickerDocClick);
+      this._onSnippetPickerDocClick = null;
+    }
+  }
+
+  async addCustomSnippet() {
+    if (!this.activePath) return;
+    const trigger = await this.prompt('Gatilho do snippet (ex.: meucomp)', 'Novo snippet');
+    if (!trigger) return;
+    const content = await this.prompt('Conteúdo do snippet (use \\n p/ quebra de linha)', 'Conteúdo');
+    if (content == null) return;
+    const snippets = [...(this.prefs.snippets || [])];
+    const existing = snippets.findIndex((s) => s.trigger === trigger.trim());
+    const item = { trigger: trigger.trim(), lang: this.currentLang(), description: trigger.trim(), content: content.replace(/\\n/g, '\n') };
+    if (existing >= 0) snippets[existing] = item;
+    else snippets.push(item);
+    await this.savePrefs({ snippets });
+    this.setStatus(`Snippet "${trigger}" salvo`);
+  }
+
+  prompt(placeholder, title) {
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.className = 'editor-prompt-input';
+      input.placeholder = placeholder;
+      const finish = (value) => {
+        overlay.remove();
+        resolve(value);
+      };
+      const ok = () => finish(input.value);
+      const cancel = () => finish(null);
+      const overlay = document.createElement('div');
+      overlay.className = 'editor-prompt';
+      const box = document.createElement('div');
+      box.className = 'editor-prompt-box';
+      const h = document.createElement('div');
+      h.className = 'editor-prompt-title';
+      h.textContent = title;
+      const btns = document.createElement('div');
+      btns.className = 'editor-prompt-btns';
+      const bOk = document.createElement('button');
+      bOk.textContent = 'OK';
+      bOk.className = 'pixel-btn pixel-btn-primary';
+      const bCancel = document.createElement('button');
+      bCancel.textContent = 'Cancelar';
+      bCancel.className = 'pixel-btn pixel-btn-ghost';
+      bOk.addEventListener('click', ok);
+      bCancel.addEventListener('click', cancel);
+      btns.append(bOk, bCancel);
+      box.append(h, input, btns);
+      overlay.appendChild(box);
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) cancel();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') ok();
+        if (e.key === 'Escape') cancel();
+      });
+      document.body.appendChild(overlay);
+      input.focus();
+    });
+  }
+
+  // ============================================================
   // S4: Keyboard Floating Toolbar (iOS)
   // ============================================================
 
@@ -394,6 +617,7 @@ export class CodeEditor {
       { label: '< >', insert: '<>', anchorRel: 1 },
       { label: '=', insert: ' = ', anchorRel: 1 },
       { label: '⇥', insert: '  ', anchorRel: 2 },
+      { label: '⚡', snippet: true, title: 'Inserir snippet' },
       { label: '↶', command: undo, title: 'Desfazer' },
       { label: '↷', command: redo, title: 'Refazer' },
     ];
@@ -406,6 +630,10 @@ export class CodeEditor {
       btn.title = def.title || def.label;
       btn.addEventListener('click', () => {
         if (!this.activePath) return;
+        if (def.snippet) {
+          this.openSnippetPicker();
+          return;
+        }
         if (def.command) {
           def.command(this.view);
         } else {

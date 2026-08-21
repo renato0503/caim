@@ -40,9 +40,10 @@ export const notify = {
     }
     document.body.appendChild(el);
     requestAnimationFrame(() => el.classList.add('show'));
-    let timer = setTimeout(hide, duration);
+    // duration 0 = toast persistente (só fecha no botão); evita sumir cedo demais
+    let timer = duration > 0 ? setTimeout(hide, duration) : null;
     function hide() {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       el.classList.remove('show');
       setTimeout(() => el.remove(), 300);
     }
@@ -96,14 +97,26 @@ export const notify = {
     return { close: () => close(false) };
   },
 
-  actions({ buttons }) {
+  actions({ buttons, title }) {
     const overlay = createOverlay(true);
     const sheet = document.createElement('div');
     sheet.className = 'ui-actions';
+    if (title) {
+      const t = document.createElement('div');
+      t.className = 'ui-actions-title';
+      t.textContent = title;
+      sheet.appendChild(t);
+    }
     for (const btn of buttons) {
       const b = document.createElement('button');
       b.className = 'ui-action-btn' + (btn.color === 'red' ? ' ui-action-danger' : '');
       b.textContent = btn.text;
+      if (btn.subtext) {
+        const sub = document.createElement('span');
+        sub.className = 'ui-action-subtext';
+        sub.textContent = btn.subtext;
+        b.appendChild(sub);
+      }
       b.addEventListener('click', () => {
         overlay.remove();
         btn.onClick?.();

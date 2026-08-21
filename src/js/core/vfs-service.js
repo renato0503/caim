@@ -30,6 +30,25 @@ export class VFSService {
       directories: '&path',
       metadata: '&key, value',
     });
+    // S36: projetos locais — snapshots nomeados do workspace (continuar/renomear/
+    // excluir só local; nunca toca no GitHub). project_files: &[projectId+path].
+    this.db.version(2).stores({
+      files: '&path, content, lastModified, mimeType',
+      directories: '&path',
+      metadata: '&key, value',
+      projects: '&id, name, createdAt, lastModified, deployed, url, fileCount',
+      project_files: '&[projectId+path], projectId, path, content, mimeType',
+    });
+    // S40/S41: `projects` ganha pinned+tags (S40); tabela `trashed` p/ a lixeira
+    // (S41 — mover para lá NÃO apaga; apagar só no esvaziar).
+    this.db.version(3).stores({
+      files: '&path, content, lastModified, mimeType',
+      directories: '&path',
+      metadata: '&key, value',
+      projects: '&id, name, createdAt, lastModified, deployed, url, fileCount, pinned, tags',
+      project_files: '&[projectId+path], projectId, path, content, mimeType',
+      trashed: '&id, name, createdAt, lastModified, deployed, url, fileCount, pinned, tags, trashedAt',
+    });
     this.events = new EventEmitter();
     this.ready = this.init();
   }
